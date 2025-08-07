@@ -676,7 +676,24 @@ impl CellIndex {
         }
         // Check for duplicates.
         let old_len = cells.len();
-        cells.sort_unstable();
+        
+        // DONE: rayon par_sort_unstable를 사용한 병렬 정렬 적용 - 대용량 데이터 정렬 성능 향상
+        #[cfg(feature = "rayon")]
+        {
+            use rayon::prelude::*;
+            if cells.len() > 1000 {
+                // 대용량 데이터의 경우 병렬 정렬 적용
+                cells.par_sort_unstable();
+            } else {
+                // 소용량 데이터의 경우 순차 정렬 유지
+                cells.sort_unstable();
+            }
+        }
+        #[cfg(not(feature = "rayon"))]
+        {
+            cells.sort_unstable();
+        }
+        
         cells.dedup();
         if cells.len() < old_len {
             return Err(CompactionError::DuplicateInput);
@@ -727,10 +744,32 @@ impl CellIndex {
         compacted: impl IntoIterator<Item = Self>,
         resolution: Resolution,
     ) -> u64 {
-        compacted
-            .into_iter()
-            .map(move |index| index.children_count(resolution))
-            .sum()
+        // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 크기 계산 성능 향상
+        #[cfg(feature = "rayon")]
+        {
+            use rayon::prelude::*;
+            let compacted: Vec<_> = compacted.into_iter().collect();
+            if compacted.len() > 100 {
+                // 대용량 데이터의 경우 병렬 처리 적용
+                compacted
+                    .into_par_iter()
+                    .map(move |index| index.children_count(resolution))
+                    .sum()
+            } else {
+                // 소용량 데이터의 경우 순차 처리 유지
+                compacted
+                    .into_iter()
+                    .map(move |index| index.children_count(resolution))
+                    .sum()
+            }
+        }
+        #[cfg(not(feature = "rayon"))]
+        {
+            compacted
+                .into_iter()
+                .map(move |index| index.children_count(resolution))
+                .sum()
+        }
     }
 
     /// Expands a compressed set of cells into a set of cells of the specified
@@ -750,10 +789,32 @@ impl CellIndex {
     pub fn uncompact(
         compacted: impl IntoIterator<Item = Self>,
         resolution: Resolution,
-    ) -> impl Iterator<Item = Self> {
-        compacted
-            .into_iter()
-            .flat_map(move |index| index.children(resolution))
+    ) -> Box<dyn Iterator<Item = Self>> {
+        // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 압축 해제 연산 성능 향상
+        #[cfg(feature = "rayon")]
+        {
+            use rayon::prelude::*;
+            let compacted: Vec<_> = compacted.into_iter().collect();
+            if compacted.len() > 100 {
+                // 대용량 데이터의 경우 병렬 처리 적용
+                let results: Vec<_> = compacted
+                    .into_par_iter()
+                    .flat_map_iter(move |index| index.children(resolution))
+                    .collect();
+                Box::new(results.into_iter())
+            } else {
+                // 소용량 데이터의 경우 순차 처리 유지
+                Box::new(compacted
+                    .into_iter()
+                    .flat_map(move |index| index.children(resolution)))
+            }
+        }
+        #[cfg(not(feature = "rayon"))]
+        {
+            Box::new(compacted
+                .into_iter()
+                .flat_map(move |index| index.children(resolution)))
+        }
     }
 
     /// Computes the cell boundary, in spherical coordinates, of this index.
@@ -1152,10 +1213,32 @@ impl CellIndex {
     pub fn grid_disks_fast(
         indexes: impl IntoIterator<Item = Self>,
         k: u32,
-    ) -> impl Iterator<Item = Option<Self>> {
-        indexes
-            .into_iter()
-            .flat_map(move |index| index.grid_disk_fast(k))
+    ) -> Box<dyn Iterator<Item = Option<Self>>> {
+        // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 다중 인덱스 처리 성능 향상
+        #[cfg(feature = "rayon")]
+        {
+            use rayon::prelude::*;
+            let indexes: Vec<_> = indexes.into_iter().collect();
+            if indexes.len() > 100 {
+                // 대용량 데이터의 경우 병렬 처리 적용
+                let results: Vec<_> = indexes
+                    .into_par_iter()
+                    .flat_map_iter(move |index| index.grid_disk_fast(k))
+                    .collect();
+                Box::new(results.into_iter())
+            } else {
+                // 소용량 데이터의 경우 순차 처리 유지
+                Box::new(indexes
+                    .into_iter()
+                    .flat_map(move |index| index.grid_disk_fast(k)))
+            }
+        }
+        #[cfg(not(feature = "rayon"))]
+        {
+            Box::new(indexes
+                .into_iter()
+                .flat_map(move |index| index.grid_disk_fast(k)))
+        }
     }
 
     /// Returns the "hollow" ring of hexagons at exactly grid distance `k` from
