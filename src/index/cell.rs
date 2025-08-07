@@ -804,16 +804,20 @@ impl CellIndex {
                 Box::new(results.into_iter())
             } else {
                 // 소용량 데이터의 경우 순차 처리 유지
-                Box::new(compacted
+                let results: Vec<_> = compacted
                     .into_iter()
-                    .flat_map(move |index| index.children(resolution)))
+                    .flat_map(move |index| index.children(resolution))
+                    .collect();
+                Box::new(results.into_iter())
             }
         }
         #[cfg(not(feature = "rayon"))]
         {
-            Box::new(compacted
+            let results: Vec<_> = compacted
                 .into_iter()
-                .flat_map(move |index| index.children(resolution)))
+                .flat_map(move |index| index.children(resolution))
+                .collect();
+            Box::new(results.into_iter())
         }
     }
 
@@ -1228,16 +1232,20 @@ impl CellIndex {
                 Box::new(results.into_iter())
             } else {
                 // 소용량 데이터의 경우 순차 처리 유지
-                Box::new(indexes
+                let results: Vec<_> = indexes
                     .into_iter()
-                    .flat_map(move |index| index.grid_disk_fast(k)))
+                    .flat_map(move |index| index.grid_disk_fast(k))
+                    .collect();
+                Box::new(results.into_iter())
             }
         }
         #[cfg(not(feature = "rayon"))]
         {
-            Box::new(indexes
+            let results: Vec<_> = indexes
                 .into_iter()
-                .flat_map(move |index| index.grid_disk_fast(k)))
+                .flat_map(move |index| index.grid_disk_fast(k))
+                .collect();
+            Box::new(results.into_iter())
         }
     }
 

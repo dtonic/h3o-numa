@@ -19,6 +19,7 @@
 | 모듈 명시성 | **모든 구현은 `h3on::` 네임스페이스로 통일** |
 | 벤치마크 기준 | `h3on` 이름으로 결과 구분 명확화 (`polygon_to_cells_h3on` 등) |
 | 변경사항 검증 | 각 STEP 적용 시 아래 검증 방법을 통한 프로그램 변경 사항 검증 |
+| 일관적인 테스트 유지 | agent는 test 코드는 수정하지 않음 |
 
 - 변경사항 검증
 ```
@@ -220,11 +221,15 @@ cargo clippy --all-targets --all-features
 - `uncompact_size` 병렬화 적용 완료 - 크기 계산 성능 향상
 - 조건부 컴파일(`#[cfg(feature = "rayon")]`)을 통한 선택적 병렬화 적용
 - 대용량 데이터(100개 이상)에서만 병렬화 적용하여 오버헤드 최소화
+- **h3o와 h3on을 equivalent하게 비교할 수 있는 벤치마크 추가 완료**
+  - `h3o` 의존성 추가 (dev-dependencies)
+  - `grid_disks_unsafe`, `compact_cells`, `polygon_to_cells`, `uncompact_cells`, `grid_disk`, `cell_to_children` 벤치마크에 h3o 비교 추가
+  - 동일한 입력/인터페이스로 h3, h3o, h3on 성능 비교 가능
 
 **🎯 다음 단계 준비:**
 - STEP 3: NUMA-aware 스레드풀 구성 (`fork_union`) 준비 완료
 - 병렬화 기반 구조 확립으로 NUMA 최적화 적용 준비 완료
-- 성능 벤치마크를 통한 병렬화 효과 검증 필요
+- 성능 벤치마크를 통한 병렬화 효과 검증 가능 (h3o vs h3on 비교)
 
 ### 🔹 STEP 3. NUMA-aware 스레드풀 구성 (`fork_union`)
 
