@@ -1,15 +1,15 @@
 [package]
-name = "h3o"
+name = "h3on"
 version = "0.8.0"
 authors = ["Sylvain Laperche <sylvain.laperche@gmail.com>"]
 edition = "2021"
-description = "A Rust implementation of the H3 geospatial indexing system."
-documentation = "https://docs.rs/h3o/"
+description = "A Rust implementation of the H3 geospatial indexing system with NUMA optimizations."
+documentation = "https://docs.rs/h3on/"
 readme = "README.md"
-homepage = "https://docs.rs/h3o"
+homepage = "https://docs.rs/h3on"
 repository = "https://github.com/HydroniumLabs/h3o"
 license = "BSD-3-Clause"
-keywords = ["geography", "geospatial", "gis", "h3", "spatial-index"]
+keywords = ["geography", "geospatial", "gis", "h3", "spatial-index", "numa", "parallel"]
 categories = ["science::geo", "no-std"]
 
 [package.metadata.docs.rs]
