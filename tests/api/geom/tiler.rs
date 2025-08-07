@@ -492,7 +492,7 @@ fn fully_in_cell_contained_geometry() {
 // https://github.com/HydroniumLabs/h3on/issues/21
 #[test]
 fn issue_21() {
-    let poly = load_polygon("h3on_issue21");
+    let poly = load_polygon("h3o_issue21");
     let mut tiler = TilerBuilder::new(Resolution::Zero)
         .containment_mode(ContainmentMode::Covers)
         .build();
@@ -504,7 +504,7 @@ fn issue_21() {
 // https://github.com/HydroniumLabs/h3on/issues/23
 #[test]
 fn issue_23() {
-    let poly = load_polygon("h3on_issue23");
+    let poly = load_polygon("h3o_issue23");
     let mut tiler = TilerBuilder::new(Resolution::Six)
         .containment_mode(ContainmentMode::Covers)
         .disable_transmeridian_heuristic()

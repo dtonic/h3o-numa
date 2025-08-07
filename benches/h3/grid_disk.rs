@@ -12,9 +12,11 @@ pub fn bench(c: &mut Criterion) {
 
     for k in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 100] {
         bench_h3on(&mut group, "h3on/Hexagon", HEXAGON, k);
+        bench_h3o(&mut group, "h3o/Hexagon", HEXAGON, k);
         bench_h3(&mut group, "h3/Hexagon", HEXAGON, k);
 
         bench_h3on(&mut group, "h3on/Pentagon", PENTAGON, k);
+        bench_h3o(&mut group, "h3o/Pentagon", PENTAGON, k);
         bench_h3(&mut group, "h3/Pentagon", PENTAGON, k);
     }
 
@@ -32,6 +34,22 @@ fn bench_h3on<T>(
     T: Measurement,
 {
     let index = CellIndex::try_from(index).expect("hex index");
+    group.bench_with_input(BenchmarkId::new(name, k), &index, |b, &index| {
+        b.iter_with_large_drop(|| {
+            black_box(index).grid_disk::<Vec<_>>(black_box(k))
+        })
+    });
+}
+
+fn bench_h3o<T>(
+    group: &mut BenchmarkGroup<T>,
+    name: &'static str,
+    index: u64,
+    k: u32,
+) where
+    T: Measurement,
+{
+    let index = h3o::CellIndex::try_from(index).expect("hex index");
     group.bench_with_input(BenchmarkId::new(name, k), &index, |b, &index| {
         b.iter_with_large_drop(|| {
             black_box(index).grid_disk::<Vec<_>>(black_box(k))

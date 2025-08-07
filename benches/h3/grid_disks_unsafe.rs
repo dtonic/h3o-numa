@@ -26,6 +26,21 @@ pub fn bench(c: &mut Criterion) {
             .for_each(drop)
         })
     });
+
+    group.bench_function("h3o", |b| {
+        let indexes = indexes
+            .iter()
+            .map(|cell| h3o::CellIndex::try_from(*cell).expect("hex index"))
+            .collect::<Vec<_>>();
+        b.iter(|| {
+            h3o::CellIndex::grid_disks_fast(
+                black_box(indexes.iter().copied()),
+                black_box(2),
+            )
+            .for_each(drop)
+        })
+    });
+
     group.bench_function("h3", |b| {
         let size = indexes.len()
             * usize::try_from(h3on::max_grid_disk_size(2))

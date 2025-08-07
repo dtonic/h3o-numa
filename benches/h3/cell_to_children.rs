@@ -19,12 +19,14 @@ pub fn bench(c: &mut Criterion) {
             Resolution::try_from(u8::from(hexagon.resolution()) + i)
                 .expect("hex resolution");
         bench_h3on(&mut group, "h3on/Hexagon", i, hexagon, child_res);
+        bench_h3o(&mut group, "h3o/Hexagon", i, hexagon, child_res);
         bench_h3(&mut group, "h3/Hexagon", i, hexagon, child_res);
 
         let child_res =
             Resolution::try_from(u8::from(pentagon.resolution()) + i)
                 .expect("pent resolution");
         bench_h3on(&mut group, "h3on/Pentagon", i, pentagon, child_res);
+        bench_h3o(&mut group, "h3o/Pentagon", i, pentagon, child_res);
         bench_h3(&mut group, "h3/Pentagon", i, pentagon, child_res);
     }
 
@@ -46,6 +48,26 @@ fn bench_h3on<T>(
         b.iter(|| {
             black_box(index)
                 .children(black_box(resolution))
+                .for_each(drop)
+        })
+    });
+}
+
+fn bench_h3o<T>(
+    group: &mut BenchmarkGroup<T>,
+    name: &'static str,
+    run: u8,
+    index: CellIndex,
+    resolution: Resolution,
+) where
+    T: Measurement,
+{
+    let h3o_index = h3o::CellIndex::try_from(u64::from(index)).expect("cell index");
+    let h3o_resolution = h3o::Resolution::try_from(u8::from(resolution)).expect("resolution");
+    group.bench_with_input(BenchmarkId::new(name, run), &resolution, |b, _| {
+        b.iter(|| {
+            black_box(h3o_index)
+                .children(black_box(h3o_resolution))
                 .for_each(drop)
         })
     });

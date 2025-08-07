@@ -21,6 +21,17 @@ pub fn bench(c: &mut Criterion) {
                 .for_each(drop)
         })
     });
+
+    group.bench_function("h3o", |b| {
+        b.iter(|| {
+            let iter = compacted.iter().copied().map(|cell| {
+                h3o::CellIndex::try_from(u64::from(cell)).expect("cell index")
+            });
+            h3o::CellIndex::uncompact(black_box(iter), h3o::Resolution::Seven)
+                .for_each(drop)
+        })
+    });
+
     group.bench_function("h3", |b| {
         let cells =
             compacted.iter().copied().map(u64::from).collect::<Vec<_>>();
