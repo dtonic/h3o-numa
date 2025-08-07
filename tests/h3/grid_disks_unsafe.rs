@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::CellIndex;
+use h3on::CellIndex;
 
 #[test]
 fn identity() {
