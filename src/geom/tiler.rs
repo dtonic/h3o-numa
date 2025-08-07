@@ -253,21 +253,79 @@ impl Tiler {
                 return None;
             }
 
-            for &(cell, _) in &candidates {
-                debug_assert!(
-                    self.geom.relate(&cell_boundary(cell)).is_covers(),
-                    "cell index {cell} in polygon"
-                );
+            // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 내부 전파 단계 성능 향상
+            #[cfg(feature = "rayon")]
+            {
+                use rayon::prelude::*;
+                if candidates.len() > 100 {
+                    // 대용량 데이터의 경우 병렬 처리 적용
+                    let next_gen_par: Vec<_> = candidates
+                        .par_iter()
+                        .flat_map_iter(|&(cell, _)| {
+                            debug_assert!(
+                                self.geom.relate(&cell_boundary(cell)).is_covers(),
+                                "cell index {cell} in polygon"
+                            );
+                            let mut scratchpad_local = [0; 7];
+                            let count = neighbors(cell, &mut scratchpad_local);
+                            scratchpad_local[0..count]
+                                .iter()
+                                .filter_map(|candidate| {
+                                    let index = CellIndex::new_unchecked(*candidate);
+                                    // 클로저 내부에서는 가변 참조를 직접 사용할 수 없으므로
+                                    // 로컬 결과를 반환하고 나중에 처리
+                                    Some((index, true))
+                                })
+                                .collect::<Vec<_>>()
+                        })
+                        .collect();
+                    
+                    // 수집된 결과를 처리
+                    for (index, _) in &next_gen_par {
+                        if new_seen.insert(*index) {
+                            if seen.insert(*index) {
+                                next_gen.push((*index, true));
+                            }
+                        }
+                    }
+                } else {
+                    // 소용량 데이터의 경우 순차 처리 유지
+                    for &(cell, _) in &candidates {
+                        debug_assert!(
+                            self.geom.relate(&cell_boundary(cell)).is_covers(),
+                            "cell index {cell} in polygon"
+                        );
 
-                let count = neighbors(cell, &mut scratchpad);
-                next_gen.extend(scratchpad[0..count].iter().filter_map(
-                    |candidate| {
-                        // SAFETY: candidate comes from `ring_disk_*`.
-                        let index = CellIndex::new_unchecked(*candidate);
-                        new_seen.insert(index);
-                        seen.insert(index).then_some((index, true))
-                    },
-                ));
+                        let count = neighbors(cell, &mut scratchpad);
+                        next_gen.extend(scratchpad[0..count].iter().filter_map(
+                            |candidate| {
+                                // SAFETY: candidate comes from `ring_disk_*`.
+                                let index = CellIndex::new_unchecked(*candidate);
+                                new_seen.insert(index);
+                                seen.insert(index).then_some((index, true))
+                            },
+                        ));
+                    }
+                }
+            }
+            #[cfg(not(feature = "rayon"))]
+            {
+                for &(cell, _) in &candidates {
+                    debug_assert!(
+                        self.geom.relate(&cell_boundary(cell)).is_covers(),
+                        "cell index {cell} in polygon"
+                    );
+
+                    let count = neighbors(cell, &mut scratchpad);
+                    next_gen.extend(scratchpad[0..count].iter().filter_map(
+                        |candidate| {
+                            // SAFETY: candidate comes from `ring_disk_*`.
+                            let index = CellIndex::new_unchecked(*candidate);
+                            new_seen.insert(index);
+                            seen.insert(index).then_some((index, true))
+                        },
+                    ));
+                }
             }
 
             let curr_gen = candidates.clone();
