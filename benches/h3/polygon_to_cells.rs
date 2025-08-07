@@ -18,6 +18,7 @@ pub fn bench_full(c: &mut Criterion) {
             |b, &res| bench_h3on(b, &polygon, res),
         );
 
+        #[cfg(feature = "geo")]
         group.bench_with_input(
             BenchmarkId::new("h3o/Full", res),
             &res,
@@ -45,6 +46,7 @@ pub fn bench_transmeridian(c: &mut Criterion) {
             |b, &res| bench_h3on(b, &polygon, res),
         );
 
+        #[cfg(feature = "geo")]
         group.bench_with_input(
             BenchmarkId::new("h3o/Transmeridian", res),
             &res,
@@ -186,6 +188,7 @@ fn bench_h3on(b: &mut Bencher<'_>, polygon: &Polygon, resolution: u8) {
     )
 }
 
+#[cfg(feature = "geo")]
 fn bench_h3o(b: &mut Bencher<'_>, polygon: &Polygon, resolution: u8) {
     let resolution = h3o::Resolution::try_from(resolution).expect("resolution");
     let mut tiler = h3o::geom::TilerBuilder::new(resolution).build();
