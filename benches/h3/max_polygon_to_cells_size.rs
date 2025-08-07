@@ -1,6 +1,6 @@
 use super::utils::load_polygon;
 use criterion::Criterion;
-use h3o::{Resolution, geom::TilerBuilder};
+use h3on::{Resolution, geom::TilerBuilder};
 use std::{hint::black_box, os::raw::c_int};
 
 const RESOLUTION: Resolution = Resolution::Nine;
@@ -9,7 +9,7 @@ pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("maxPolygonToCellsSize");
     let polygon = load_polygon("Paris");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let mut tiler = TilerBuilder::new(RESOLUTION).build();
         tiler.add(polygon.clone()).expect("valid polygon");
         b.iter(|| black_box(&tiler).coverage_size_hint())

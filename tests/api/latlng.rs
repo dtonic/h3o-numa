@@ -1,5 +1,5 @@
 use float_eq::assert_float_eq;
-use h3o::{CellIndex, LatLng, Resolution};
+use h3on::{CellIndex, LatLng, Resolution};
 use std::f64::consts::{FRAC_PI_2, PI};
 
 const EPSILON: f64 = 1e-9 * PI / 180.0;

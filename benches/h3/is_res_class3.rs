@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::hint::black_box;
 
 const INPUT: u64 = 0x8f734e64992d6d8;
@@ -7,7 +7,7 @@ const INPUT: u64 = 0x8f734e64992d6d8;
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("isResClassIII");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let resolution =
             CellIndex::try_from(INPUT).expect("cell index").resolution();
         b.iter(|| black_box(resolution).is_class3())

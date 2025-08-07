@@ -1,4 +1,4 @@
-use h3o::Face;
+use h3on::Face;
 
 #[test]
 fn try_from_u8() {

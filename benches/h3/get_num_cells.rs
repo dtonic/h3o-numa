@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion};
-use h3o::Resolution;
+use h3on::Resolution;
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
@@ -7,7 +7,7 @@ pub fn bench(c: &mut Criterion) {
 
     for resolution in 0..=15 {
         group.bench_with_input(
-            BenchmarkId::new("h3o", resolution),
+            BenchmarkId::new("h3on", resolution),
             &resolution,
             |b, &resolution| {
                 let resolution =

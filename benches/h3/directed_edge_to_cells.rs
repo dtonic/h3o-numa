@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::DirectedEdgeIndex;
+use h3on::DirectedEdgeIndex;
 use std::hint::black_box;
 
 const INPUT: u64 = 0x13f2834782b9c2ab;
@@ -7,7 +7,7 @@ const INPUT: u64 = 0x13f2834782b9c2ab;
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("directedEdgeToCells");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let index = DirectedEdgeIndex::try_from(INPUT).expect("edge index");
         b.iter(|| black_box(index).cells())
     });

@@ -1,4 +1,4 @@
-use h3o::IndexMode;
+use h3on::IndexMode;
 
 #[test]
 fn into_u8() {

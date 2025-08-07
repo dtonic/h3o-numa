@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
@@ -8,7 +8,7 @@ pub fn bench(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("cellsToDirectedEdge");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let origin = CellIndex::try_from(ORIGIN).expect("cell index");
         let destination = CellIndex::try_from(DESTINATION).expect("cell index");
         b.iter(|| black_box(origin).edge(black_box(destination)))

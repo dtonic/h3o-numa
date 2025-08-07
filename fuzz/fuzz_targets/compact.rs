@@ -1,6 +1,6 @@
 #![no_main]
 
-use h3o::CellIndex;
+use h3on::CellIndex;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|cells: Vec<u64>| {

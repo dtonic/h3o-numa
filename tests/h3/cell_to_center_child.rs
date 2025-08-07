@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::{LatLng, Resolution};
+use h3on::{LatLng, Resolution};
 
 macro_rules! test {
     ($name:ident, $resolution:literal) => {

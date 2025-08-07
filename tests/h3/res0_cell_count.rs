@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::BaseCell;
+use h3on::BaseCell;
 
 #[test]
 fn value() {

@@ -22,13 +22,13 @@
 //! * **serde** -
 //!   When enabled, H3 index types (cell, vertex and edge) derive serde traits.
 //!
-//! ## H3 to H3ON mapping
+//! ## H3 to h3on mapping
 //!
-//! For people used to the H3 API, here is the mapping to H3ON.
+//! For people used to the H3 API, here is the mapping to h3on.
 //!
 //! ### Indexing functions
 //!
-//! | H3               | H3ON                        |
+//! | H3               | h3on                        |
 //! | :--------------- | :------------------------- |
 //! | `latLngToCell`   | [`LatLng::to_cell`]        |
 //! | `cellToLatLng`   | [`LatLng::from`](./struct.LatLng.html#impl-From<CellIndex>-for-LatLng) |
@@ -36,7 +36,7 @@
 //!
 //! ### Index inspection functions
 //!
-//! | H3                    | H3ON                              |
+//! | H3                    | h3on                              |
 //! | :-------------------- | :------------------------------- |
 //! | `getResolution`       | [`CellIndex::resolution`]        |
 //! | `getBaseCellNumber`   | [`CellIndex::base_cell`]         |
@@ -51,7 +51,7 @@
 //!
 //! ### Grid traversal functions
 //!
-//! | H3                        | H3ON                                     |
+//! | H3                        | h3on                                     |
 //! | :------------------------ | :-------------------------------------- |
 //! | `gridDisk`                | [`CellIndex::grid_disk`]                |
 //! | `maxGridDiskSize`         | [`max_grid_disk_size`]                  |
@@ -71,7 +71,7 @@
 //!
 //! ### Hierarchical grid functions
 //!
-//! | H3                      | H3ON                           |
+//! | H3                      | h3on                           |
 //! | :---------------------- | :---------------------------- |
 //! | `cellToParent`          | [`CellIndex::parent`]         |
 //! | `cellToChildren`        | [`CellIndex::children`]       |
@@ -85,7 +85,7 @@
 //!
 //! ### Region functions
 //!
-//! | H3                      | H3ON                                 |
+//! | H3                      | h3on                                 |
 //! | :---------------------- | :---------------------------------  |
 //! | `polygonToCells`        | [`geom::Tiler::into_coverage`]      |
 //! | `maxPolygonToCellsSize` | [`geom::Tiler::coverage_size_hint`] |
@@ -94,7 +94,7 @@
 //!
 //! ### Directed edge functions
 //!
-//! | H3                           | H3ON                                |
+//! | H3                           | h3on                                |
 //! | :--------------------------- | :--------------------------------- |
 //! | `areNeighborCells`           | [`CellIndex::is_neighbor_with`]    |
 //! | `cellsToDirectedEdge`        | [`CellIndex::edge`]                |
@@ -107,7 +107,7 @@
 //!
 //! ### Vertex functions
 //!
-//! | H3               | H3ON                       |
+//! | H3               | h3on                       |
 //! | :--------------- | :------------------------ |
 //! | `cellToVertex`   | [`CellIndex::vertex`]     |
 //! | `cellToVertexes` | [`CellIndex::vertexes`]   |
@@ -116,7 +116,7 @@
 //!
 //! ### Miscellaneous H3 functions
 //!
-//! | H3                          | H3ON                                |
+//! | H3                          | h3on                                |
 //! | :-------------------------- | :--------------------------------- |
 //! | `degsToRads`                | [`f64::to_radians`]                |
 //! | `radsToDegs`                | [`f64::to_degrees`]                |
@@ -315,7 +315,7 @@ const TWO_PI: f64 = 2. * core::f64::consts::PI;
 /// # Example
 ///
 /// ```
-/// let count = h3o::max_grid_disk_size(3);
+/// let count = h3on::max_grid_disk_size(3);
 /// ```
 #[must_use]
 pub const fn max_grid_disk_size(k: u32) -> u64 {

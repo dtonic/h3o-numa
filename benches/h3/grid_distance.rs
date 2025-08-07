@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion};
-use h3o::{LatLng, Resolution};
+use h3on::{LatLng, Resolution};
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
@@ -13,7 +13,7 @@ pub fn bench(c: &mut Criterion) {
         let dst = dst.to_cell(resolution);
 
         group.bench_with_input(
-            BenchmarkId::new("h3o", res),
+            BenchmarkId::new("h3on", res),
             &(src, dst),
             |b, (src, dst)| {
                 b.iter(|| black_box(src).grid_distance(black_box(*dst)))

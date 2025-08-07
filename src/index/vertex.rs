@@ -152,8 +152,8 @@ impl VertexIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::VertexIndex::try_from(0x2222597fffffffff)?;
-    /// assert_eq!(index.vertex(), h3o::Vertex::try_from(2)?);
+    /// let index = h3on::VertexIndex::try_from(0x2222597fffffffff)?;
+    /// assert_eq!(index.vertex(), h3on::Vertex::try_from(2)?);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
@@ -167,8 +167,8 @@ impl VertexIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::VertexIndex::try_from(0x2222597fffffffff)?;
-    /// assert_eq!(index.owner(), h3o::CellIndex::try_from(0x822597fffffffff)?);
+    /// let index = h3on::VertexIndex::try_from(0x2222597fffffffff)?;
+    /// assert_eq!(index.owner(), h3on::CellIndex::try_from(0x822597fffffffff)?);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]

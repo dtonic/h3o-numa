@@ -35,11 +35,11 @@ impl BaseCell {
     /// # Example
     ///
     /// ```
-    /// use h3o::BaseCell;
+    /// use h3on::BaseCell;
     ///
     /// assert!(BaseCell::try_from(4)?.is_pentagon());
     /// assert!(!BaseCell::try_from(8)?.is_pentagon());
-    /// # Ok::<(), h3o::error::InvalidBaseCell>(())
+    /// # Ok::<(), h3on::error::InvalidBaseCell>(())
     /// ```
     #[must_use]
     pub const fn is_pentagon(self) -> bool {
@@ -51,7 +51,7 @@ impl BaseCell {
     /// # Example
     ///
     /// ```
-    /// use h3o::BaseCell;
+    /// use h3on::BaseCell;
     ///
     /// assert_eq!(BaseCell::count(), 122);
     /// ```
@@ -65,7 +65,7 @@ impl BaseCell {
     /// # Example
     ///
     /// ```
-    /// use h3o::BaseCell;
+    /// use h3on::BaseCell;
     ///
     /// let cells = BaseCell::iter().collect::<Vec<_>>();
     /// ```

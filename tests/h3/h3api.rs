@@ -1,7 +1,7 @@
 //! Expose some H3 functions to allow testing against the reference
 //! implementation.
 
-use h3o::{
+use h3on::{
     BaseCell, Boundary, CellIndex, CoordIJ, DirectedEdgeIndex, Face, LatLng,
     LocalIJ, Resolution, Vertex, VertexIndex,
 };

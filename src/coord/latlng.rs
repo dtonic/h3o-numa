@@ -46,10 +46,10 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
+    /// let ll = h3on::LatLng::new(48.864716, 2.349014)?;
     ///
-    /// assert!(h3o::LatLng::new(f64::NAN, 10.).is_err());
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// assert!(h3on::LatLng::new(f64::NAN, 10.).is_err());
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     pub const fn new(lat: f64, lng: f64) -> Result<Self, InvalidLatLng> {
         Self::from_radians(lat.to_radians(), lng.to_radians())
@@ -64,8 +64,8 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::from_radians(0.852850182, 0.0409980285)?;
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// let ll = h3on::LatLng::from_radians(0.852850182, 0.0409980285)?;
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     pub const fn from_radians(
         lat: f64,
@@ -86,10 +86,10 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
+    /// let ll = h3on::LatLng::new(48.864716, 2.349014)?;
     ///
     /// assert_eq!(ll.lat(), 48.864716);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     #[must_use]
     pub const fn lat(self) -> f64 {
@@ -101,10 +101,10 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
+    /// let ll = h3on::LatLng::new(48.864716, 2.349014)?;
     ///
     /// assert_eq!(ll.lng(), 2.349014);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     #[must_use]
     pub const fn lng(self) -> f64 {
@@ -116,10 +116,10 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
+    /// let ll = h3on::LatLng::new(48.864716, 2.349014)?;
     ///
     /// assert_eq!(ll.lat_radians(), 0.8528501822519535);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     #[must_use]
     pub const fn lat_radians(self) -> f64 {
@@ -131,10 +131,10 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
+    /// let ll = h3on::LatLng::new(48.864716, 2.349014)?;
     ///
     /// assert_eq!(ll.lng_radians(), 0.04099802847544208);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     #[must_use]
     pub const fn lng_radians(self) -> f64 {
@@ -153,11 +153,11 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let src = h3o::LatLng::new(48.864716, 2.349014)?;
-    /// let dst = h3o::LatLng::new(31.224361, 121.469170)?;
+    /// let src = h3on::LatLng::new(48.864716, 2.349014)?;
+    /// let dst = h3on::LatLng::new(31.224361, 121.469170)?;
     ///
     /// assert_eq!(src.distance_rads(dst), 1.453859220532047);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     #[must_use]
     pub fn distance_rads(self, other: Self) -> f64 {
@@ -179,11 +179,11 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let src = h3o::LatLng::new(48.864716, 2.349014)?;
-    /// let dst = h3o::LatLng::new(31.224361, 121.469170)?;
+    /// let src = h3on::LatLng::new(48.864716, 2.349014)?;
+    /// let dst = h3on::LatLng::new(31.224361, 121.469170)?;
     ///
     /// assert_eq!(src.distance_km(dst), 9262.547534054209);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     #[must_use]
     pub fn distance_km(self, other: Self) -> f64 {
@@ -195,11 +195,11 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let src = h3o::LatLng::new(48.864716, 2.349014)?;
-    /// let dst = h3o::LatLng::new(31.224361, 121.469170)?;
+    /// let src = h3on::LatLng::new(48.864716, 2.349014)?;
+    /// let dst = h3on::LatLng::new(31.224361, 121.469170)?;
     ///
     /// assert_eq!(src.distance_m(dst), 9262547.534054209);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     #[must_use]
     pub fn distance_m(self, other: Self) -> f64 {
@@ -212,9 +212,9 @@ impl LatLng {
     /// # Example
     ///
     /// ```
-    /// let ll = h3o::LatLng::new(48.864716, 2.349014)?;
-    /// let cell = ll.to_cell(h3o::Resolution::Five);
-    /// # Ok::<(), h3o::error::InvalidLatLng>(())
+    /// let ll = h3on::LatLng::new(48.864716, 2.349014)?;
+    /// let cell = ll.to_cell(h3on::Resolution::Five);
+    /// # Ok::<(), h3on::error::InvalidLatLng>(())
     /// ```
     #[must_use]
     pub fn to_cell(self, resolution: Resolution) -> CellIndex {

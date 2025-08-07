@@ -1,5 +1,5 @@
 use geo::{Geometry, Polygon};
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::{
     fs::File,
     io::{BufRead, BufReader},

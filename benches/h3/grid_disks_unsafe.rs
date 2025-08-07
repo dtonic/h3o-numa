@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::{hint::black_box, os::raw::c_int};
 
 pub fn bench(c: &mut Criterion) {
@@ -13,7 +13,7 @@ pub fn bench(c: &mut Criterion) {
         0x89283080dc3ffff,
     ];
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let indexes = indexes
             .iter()
             .map(|cell| CellIndex::try_from(*cell).expect("hex index"))
@@ -28,7 +28,7 @@ pub fn bench(c: &mut Criterion) {
     });
     group.bench_function("h3", |b| {
         let size = indexes.len()
-            * usize::try_from(h3o::max_grid_disk_size(2))
+            * usize::try_from(h3on::max_grid_disk_size(2))
                 .expect("grid too large");
         let mut cells = vec![0; size];
         b.iter(|| unsafe {

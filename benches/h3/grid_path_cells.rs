@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion};
-use h3o::{LatLng, Resolution};
+use h3on::{LatLng, Resolution};
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
@@ -14,7 +14,7 @@ pub fn bench(c: &mut Criterion) {
         let size = src.grid_path_cells_size(dst).expect("path size");
 
         group.bench_with_input(
-            BenchmarkId::new("h3o", res),
+            BenchmarkId::new("h3on", res),
             &(src, dst),
             |b, (src, dst)| {
                 b.iter(|| {

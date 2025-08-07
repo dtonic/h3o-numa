@@ -1,7 +1,7 @@
 #![no_main]
 
 use geo_types::{Coord, LineString, Polygon};
-use h3o::{geom::TilerBuilder, Resolution};
+use h3on::{geom::TilerBuilder, Resolution};
 use libfuzzer_sys::fuzz_target;
 
 #[derive(Debug, arbitrary::Arbitrary)]

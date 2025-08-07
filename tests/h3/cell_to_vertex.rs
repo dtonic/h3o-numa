@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::{CellIndex, Resolution, Vertex};
+use h3on::{CellIndex, Resolution, Vertex};
 
 macro_rules! exhaustive_test {
     ($name:ident, $resolution:literal) => {

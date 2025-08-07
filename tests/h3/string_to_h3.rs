@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::{CellIndex, DirectedEdgeIndex, VertexIndex};
+use h3on::{CellIndex, DirectedEdgeIndex, VertexIndex};
 
 macro_rules! test {
     ($name:ident, $string:literal, $ty:ty) => {

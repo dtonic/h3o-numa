@@ -1,4 +1,4 @@
-//! H3O error types.
+//! h3on error types.
 
 mod compaction;
 mod hex_grid;

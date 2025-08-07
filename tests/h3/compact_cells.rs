@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::{CellIndex, Resolution};
+use h3on::{CellIndex, Resolution};
 
 fn assert_compact(mut cells: Vec<CellIndex>) {
     let reference = h3api::compact_cells(&cells).map(|mut cells| {
