@@ -1,4 +1,4 @@
-use h3o::{CellIndex, CoordIJ, LocalIJ};
+use h3on::{CellIndex, CoordIJ, LocalIJ};
 
 #[test]
 fn display() {

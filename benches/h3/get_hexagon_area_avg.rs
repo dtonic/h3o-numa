@@ -1,10 +1,10 @@
 use criterion::{black_box, Criterion};
-use h3o::Resolution;
+use h3on::Resolution;
 
 pub fn bench_km2(c: &mut Criterion) {
     let mut group = c.benchmark_group("getHexagonAreaAvgKm2");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         b.iter(|| black_box(Resolution::Three).area_km2())
     });
     group.bench_function("h3", |b| {
@@ -20,7 +20,7 @@ pub fn bench_km2(c: &mut Criterion) {
 pub fn bench_m2(c: &mut Criterion) {
     let mut group = c.benchmark_group("getHexagonAreaAvgM2");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         b.iter(|| black_box(Resolution::Three).area_m2())
     });
     group.bench_function("h3", |b| {

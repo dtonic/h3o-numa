@@ -78,7 +78,7 @@ impl Tiler {
     ///
     /// ```rust
     /// use geo::{LineString, Polygon};
-    /// use h3o::{geom::{ContainmentMode, TilerBuilder}, Resolution};
+    /// use h3on::{geom::{ContainmentMode, TilerBuilder}, Resolution};
     ///
     /// let polygon = Polygon::new(
     ///     LineString::from(vec![(0., 0.), (1., 1.), (1., 0.), (0., 0.)]),
@@ -91,7 +91,7 @@ impl Tiler {
     ///
     /// let size_hint = tiler.coverage_size_hint();
     ///
-    /// # Ok::<(), h3o::error::InvalidGeometry>(())
+    /// # Ok::<(), h3on::error::InvalidGeometry>(())
     /// ```
     #[must_use]
     pub fn coverage_size_hint(&self) -> usize {
@@ -135,7 +135,7 @@ impl Tiler {
     ///
     /// ```rust
     /// use geo::{LineString, Polygon};
-    /// use h3o::{geom::{ContainmentMode, TilerBuilder}, Resolution};
+    /// use h3on::{geom::{ContainmentMode, TilerBuilder}, Resolution};
     ///
     /// let polygon = Polygon::new(
     ///     LineString::from(vec![(0., 0.), (1., 1.), (1., 0.), (0., 0.)]),
@@ -148,7 +148,7 @@ impl Tiler {
     ///
     /// let cells = tiler.into_coverage().collect::<Vec<_>>();
     ///
-    /// # Ok::<(), h3o::error::InvalidGeometry>(())
+    /// # Ok::<(), h3on::error::InvalidGeometry>(())
     /// ```
     pub fn into_coverage(self) -> impl Iterator<Item = CellIndex> {
         // This implementation traces the outlines of the polygon's rings, fill one

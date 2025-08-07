@@ -77,7 +77,7 @@ impl Direction {
     /// # Example
     ///
     /// ```
-    /// use h3o::Direction;
+    /// use h3on::Direction;
     ///
     /// let directions = Direction::iter().collect::<Vec<_>>();
     /// ```

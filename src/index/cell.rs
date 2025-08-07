@@ -181,9 +181,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
-    /// assert_eq!(index.resolution(), h3o::Resolution::Ten);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// assert_eq!(index.resolution(), h3on::Resolution::Ten);
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub const fn resolution(self) -> Resolution {
@@ -195,8 +195,8 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
-    /// assert_eq!(index.base_cell(), h3o::BaseCell::try_from(15)?);
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// assert_eq!(index.base_cell(), h3on::BaseCell::try_from(15)?);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
@@ -211,9 +211,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(index.area_rads2(), 3.3032558516982826e-10);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn area_rads2(self) -> f64 {
@@ -233,9 +233,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(index.area_km2(), 0.013407827139722947);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn area_km2(self) -> f64 {
@@ -247,9 +247,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(index.area_m2(), 13407.827139722947);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn area_m2(self) -> f64 {
@@ -261,9 +261,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let faces = index.icosahedron_faces().iter().collect::<Vec<_>>();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn icosahedron_faces(self) -> FaceSet {
@@ -331,9 +331,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert!(!index.is_pentagon());
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn is_pentagon(self) -> bool {
@@ -356,9 +356,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(index.max_face_count(), 2);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn max_face_count(self) -> usize {
@@ -376,7 +376,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Direction, Resolution};
+    /// use h3on::{CellIndex, Direction, Resolution};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(index.direction_at(Resolution::Five), Some(Direction::K));
@@ -396,14 +396,14 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(
     ///     index.parent(Resolution::Five),
     ///     CellIndex::try_from(0x851fb467fffffff).ok()
     /// );
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn parent(self, resolution: Resolution) -> Option<Self> {
@@ -418,14 +418,14 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(
     ///     index.center_child(Resolution::Fifteen),
     ///     CellIndex::try_from(0x8f1fb46622d8000).ok()
     /// );
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn center_child(self, resolution: Resolution) -> Option<Self> {
@@ -444,11 +444,11 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(index.children_count(Resolution::Fifteen), 16_807);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     // In this case, `mut-let-if` is faster than the idiomatic `let-if-else`.
@@ -482,12 +482,12 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(index.child_position(Resolution::Eight), Some(24));
     /// assert_eq!(index.child_position(Resolution::Twelve), None);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn child_position(self, resolution: Resolution) -> Option<u64> {
         let Some(parent_is_pentagon) =
@@ -554,7 +554,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x881fb46623fffff)?;
     /// assert_eq!(
@@ -562,7 +562,7 @@ impl CellIndex {
     ///     CellIndex::try_from(0x8a1fb46622dffff).ok(),
     /// );
     /// assert_eq!(index.child_at(24, Resolution::Five), None);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn child_at(
@@ -622,11 +622,11 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let children = index.children(Resolution::Eleven).collect::<Vec<_>>();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn children(
         self,
@@ -649,7 +649,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let cells = [
     ///     0x081003ffffffffff,
@@ -717,11 +717,11 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let size = CellIndex::uncompact_size(std::iter::once(index), Resolution::Eleven);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn uncompact_size(
         compacted: impl IntoIterator<Item = Self>,
@@ -739,13 +739,13 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let cells = CellIndex::uncompact(
     ///     std::iter::once(index), Resolution::Eleven
     /// ).collect::<Vec<_>>();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn uncompact(
         compacted: impl IntoIterator<Item = Self>,
@@ -761,9 +761,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let boundary = index.boundary().iter().collect::<Vec<_>>();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn boundary(self) -> Boundary {
@@ -782,7 +782,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let cells = h3o::CellIndex::base_cells().collect::<Vec<_>>();
+    /// let cells = h3on::CellIndex::base_cells().collect::<Vec<_>>();
     /// ```
     pub fn base_cells() -> impl Iterator<Item = Self> {
         (0..BaseCell::count()).map(|base_cell| {
@@ -798,7 +798,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Direction, DirectedEdgeIndex};
+    /// use h3on::{CellIndex, Direction, DirectedEdgeIndex};
     ///
     /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
@@ -827,9 +827,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let edges = index.edges().collect::<Vec<_>>();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn edges(self) -> impl Iterator<Item = DirectedEdgeIndex> {
         let template = bits::set_mode(self.0.get(), IndexMode::DirectedEdge);
@@ -847,7 +847,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Vertex, VertexIndex};
+    /// use h3on::{CellIndex, Vertex, VertexIndex};
     ///
     /// let index = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// assert_eq!(
@@ -961,9 +961,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let vertexes = index.vertexes().collect::<Vec<_>>();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn vertexes(self) -> impl Iterator<Item = VertexIndex> {
         (0..self.vertex_count()).map(move |vertex| {
@@ -983,9 +983,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let cells = index.grid_disk::<Vec<_>>(2);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn grid_disk<T>(self, k: u32) -> T
@@ -1002,9 +1002,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let cells = index.grid_disk_safe(2).collect::<Vec<_>>();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn grid_disk_safe(self, k: u32) -> impl Iterator<Item = Self> {
         if k == 0 {
@@ -1028,10 +1028,10 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let cells = index.grid_disk_fast(2).collect::<Option<Vec<_>>>()
     ///     .unwrap_or_default();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn grid_disk_fast(self, k: u32) -> impl Iterator<Item = Option<Self>> {
         if k == 0 {
@@ -1057,9 +1057,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let cells_and_dists = index.grid_disk_distances::<Vec<_>>(2);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub fn grid_disk_distances<T>(self, k: u32) -> T
@@ -1078,9 +1078,9 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let cells_and_dists = index.grid_disk_distances_safe(2).collect::<Vec<_>>();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn grid_disk_distances_safe(
         self,
@@ -1106,11 +1106,11 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let cells_and_dists = index.grid_disk_distances_fast(2)
     ///     .collect::<Option<Vec<_>>>()
     ///     .unwrap_or_default();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn grid_disk_distances_fast(
         self,
@@ -1139,7 +1139,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let indexes = vec![
     ///     CellIndex::try_from(0x8a1fb46622dffff)?,
@@ -1148,7 +1148,7 @@ impl CellIndex {
     /// let cells = CellIndex::grid_disks_fast(indexes, 2)
     ///     .collect::<Option<Vec<_>>>()
     ///     .unwrap_or_default();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     pub fn grid_disks_fast(
         indexes: impl IntoIterator<Item = Self>,
         k: u32,
@@ -1173,10 +1173,10 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x8a1fb46622dffff)?;
+    /// let index = h3on::CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let cells = index.grid_ring_fast(2).collect::<Option<Vec<_>>>()
     ///     .unwrap_or_default();
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn grid_ring_fast(self, k: u32) -> impl Iterator<Item = Option<Self>> {
         if k == 0 {
@@ -1204,7 +1204,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
@@ -1230,7 +1230,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
@@ -1267,7 +1267,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
@@ -1293,7 +1293,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let src = CellIndex::try_from(0x8a1fb46622dffff)?;
     /// let dst = CellIndex::try_from(0x8a1fb46622d7fff)?;
@@ -1392,7 +1392,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let anchor = CellIndex::try_from(0x823147fffffffff)?;
     /// let index = CellIndex::try_from(0x8230e7fffffffff)?;
@@ -1412,11 +1412,11 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let start = CellIndex::try_from(0x823147fffffffff)?;
     /// let after = start.succ().expect("next cell index");
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn succ(self) -> Option<Self> {
         // Bitmask to detect IJ (6) directions.
@@ -1465,11 +1465,11 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::CellIndex;
+    /// use h3on::CellIndex;
     ///
     /// let start = CellIndex::try_from(0x823147fffffffff)?;
     /// let before = start.pred().expect("next cell index");
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     pub fn pred(self) -> Option<Self> {
         let resolution = self.resolution();
@@ -1513,7 +1513,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let first = CellIndex::first(Resolution::Nine);
     /// ```
@@ -1528,7 +1528,7 @@ impl CellIndex {
     /// # Example
     ///
     /// ```
-    /// use h3o::{CellIndex, Resolution};
+    /// use h3on::{CellIndex, Resolution};
     ///
     /// let last = CellIndex::last(Resolution::Nine);
     /// ```

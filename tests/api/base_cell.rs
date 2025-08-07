@@ -1,4 +1,4 @@
-use h3o::BaseCell;
+use h3on::BaseCell;
 
 #[test]
 fn is_pentagon() {

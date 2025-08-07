@@ -1,4 +1,4 @@
-use h3o::Resolution;
+use h3on::Resolution;
 
 #[test]
 fn try_from_u8() {

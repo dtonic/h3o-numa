@@ -1,7 +1,7 @@
 //! Compute average H3 cell edge length.
 //!
 //! Inspired from https://gist.github.com/mciethan/3e10802c1f41972831c325994d97ef27
-use h3o::{CellIndex, DirectedEdgeIndex, Resolution};
+use h3on::{CellIndex, DirectedEdgeIndex, Resolution};
 use polyfit_rs::polyfit_rs::polyfit;
 
 fn main() {
@@ -17,7 +17,7 @@ fn main() {
         averages.push((coeffs[1] * f64::from(resolution) + coeffs[0]).exp())
     }
     for avg in averages {
-        let avg_km = avg * h3o::EARTH_RADIUS_KM;
+        let avg_km = avg * h3on::EARTH_RADIUS_KM;
         let avg_m = avg_km * 1000.;
         println!("{avg},{avg_km},{avg_m}");
     }

@@ -1,6 +1,6 @@
 #![no_main]
 
-use h3o::{LatLng, VertexIndex};
+use h3on::{LatLng, VertexIndex};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|index: VertexIndex| {

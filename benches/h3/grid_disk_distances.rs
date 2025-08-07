@@ -1,7 +1,7 @@
 use criterion::{
     black_box, measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
 };
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::os::raw::c_int;
 
 const HEXAGON: u64 = 0x8b1fb46622defff;
@@ -11,10 +11,10 @@ pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("gridDiskDistances");
 
     for k in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 100] {
-        bench_h3o(&mut group, "h3o/Hexagon", HEXAGON, k);
+        bench_h3on(&mut group, "h3on/Hexagon", HEXAGON, k);
         bench_h3(&mut group, "h3/Hexagon", HEXAGON, k);
 
-        bench_h3o(&mut group, "h3o/Pentagon", PENTAGON, k);
+        bench_h3on(&mut group, "h3on/Pentagon", PENTAGON, k);
         bench_h3(&mut group, "h3/Pentagon", PENTAGON, k);
     }
 
@@ -23,7 +23,7 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o<T>(
+fn bench_h3on<T>(
     group: &mut BenchmarkGroup<T>,
     name: &'static str,
     index: u64,
@@ -48,7 +48,7 @@ fn bench_h3<T>(
     T: Measurement,
 {
     let size =
-        usize::try_from(h3o::max_grid_disk_size(k)).expect("grid too large");
+        usize::try_from(h3on::max_grid_disk_size(k)).expect("grid too large");
 
     group.bench_with_input(
         BenchmarkId::new(name, k),

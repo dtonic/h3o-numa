@@ -1,4 +1,4 @@
-use h3o::Direction;
+use h3on::Direction;
 
 #[test]
 fn try_from_u8() {

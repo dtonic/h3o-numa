@@ -1,5 +1,5 @@
 use criterion::{black_box, Bencher, Criterion};
-use h3o::LatLng;
+use h3on::LatLng;
 
 const SRC: (f64, f64) = (48.854501508844095, 2.3729695423293613);
 const DST: (f64, f64) = (33.988491214456516, -118.47327934764078);
@@ -57,7 +57,7 @@ pub fn bench_m(c: &mut Criterion) {
 fn bench_distance<F, G>(
     c: &mut Criterion,
     name: &'static str,
-    mut bench_h3o: F,
+    mut bench_h3on: F,
     mut bench_h3: G,
 ) where
     F: FnMut(&mut Bencher<'_>, LatLng, LatLng),
@@ -65,10 +65,10 @@ fn bench_distance<F, G>(
 {
     let mut group = c.benchmark_group(name);
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let src = LatLng::new(SRC.0, SRC.1).expect("src");
         let dst = LatLng::new(DST.0, DST.1).expect("dst");
-        bench_h3o(b, src, dst)
+        bench_h3on(b, src, dst)
     });
     group.bench_function("h3", |b| {
         let src = h3ron_h3_sys::LatLng {

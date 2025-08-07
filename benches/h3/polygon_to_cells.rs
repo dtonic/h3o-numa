@@ -1,7 +1,7 @@
 use super::utils::load_polygon;
 use criterion::{black_box, BatchSize, Bencher, BenchmarkId, Criterion};
 use geo::Polygon;
-use h3o::{
+use h3on::{
     geom::{ContainmentMode, TilerBuilder},
     Resolution,
 };
@@ -13,9 +13,9 @@ pub fn bench_full(c: &mut Criterion) {
 
     for res in 0..=12 {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Full", res),
+            BenchmarkId::new("h3on/Full", res),
             &res,
-            |b, &res| bench_h3o(b, &polygon, res),
+            |b, &res| bench_h3on(b, &polygon, res),
         );
 
         group.bench_with_input(
@@ -34,9 +34,9 @@ pub fn bench_transmeridian(c: &mut Criterion) {
 
     for res in 0..=13 {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Transmeridian", res),
+            BenchmarkId::new("h3on/Transmeridian", res),
             &res,
-            |b, &res| bench_h3o(b, &polygon, res),
+            |b, &res| bench_h3on(b, &polygon, res),
         );
 
         group.bench_with_input(
@@ -53,7 +53,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
     let mut group = c.benchmark_group("polyfillMode");
 
     let polygon = load_polygon("Paris");
-    group.bench_function("h3o/Centroid/Full", |b| {
+    group.bench_function("h3on/Centroid/Full", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Eleven)
             .containment_mode(ContainmentMode::ContainsCentroid)
             .build();
@@ -64,7 +64,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
-    group.bench_function("h3o/Intersects/Full", |b| {
+    group.bench_function("h3on/Intersects/Full", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Eleven)
             .containment_mode(ContainmentMode::IntersectsBoundary)
             .build();
@@ -75,7 +75,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
-    group.bench_function("h3o/Contains/Full", |b| {
+    group.bench_function("h3on/Contains/Full", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Eleven)
             .containment_mode(ContainmentMode::ContainsBoundary)
             .build();
@@ -88,7 +88,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
     });
 
     let polygon = load_polygon("Rabi");
-    group.bench_function("h3o/Centroid/Transmeridian", |b| {
+    group.bench_function("h3on/Centroid/Transmeridian", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Eleven)
             .containment_mode(ContainmentMode::ContainsCentroid)
             .build();
@@ -99,7 +99,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
-    group.bench_function("h3o/Intersects/Transmeridian", |b| {
+    group.bench_function("h3on/Intersects/Transmeridian", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Eleven)
             .containment_mode(ContainmentMode::IntersectsBoundary)
             .build();
@@ -110,7 +110,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
-    group.bench_function("h3o/Contains/Transmeridian", |b| {
+    group.bench_function("h3on/Contains/Transmeridian", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Eleven)
             .containment_mode(ContainmentMode::ContainsBoundary)
             .build();
@@ -123,7 +123,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
     });
 
     let polygon = load_polygon("Holes");
-    group.bench_function("h3o/Centroid/Holes", |b| {
+    group.bench_function("h3on/Centroid/Holes", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Seven)
             .containment_mode(ContainmentMode::ContainsCentroid)
             .build();
@@ -134,7 +134,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
-    group.bench_function("h3o/Intersects/Holes", |b| {
+    group.bench_function("h3on/Intersects/Holes", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Seven)
             .containment_mode(ContainmentMode::IntersectsBoundary)
             .build();
@@ -145,7 +145,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
             BatchSize::SmallInput,
         )
     });
-    group.bench_function("h3o/Contains/Holes", |b| {
+    group.bench_function("h3on/Contains/Holes", |b| {
         let mut tiler = TilerBuilder::new(Resolution::Seven)
             .containment_mode(ContainmentMode::ContainsBoundary)
             .build();
@@ -162,7 +162,7 @@ pub fn bench_polyfill_mode(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o(b: &mut Bencher<'_>, polygon: &Polygon, resolution: u8) {
+fn bench_h3on(b: &mut Bencher<'_>, polygon: &Polygon, resolution: u8) {
     let resolution = Resolution::try_from(resolution).expect("resolution");
     let mut tiler = TilerBuilder::new(resolution).build();
     tiler.add(polygon.clone()).expect("valid polygon");

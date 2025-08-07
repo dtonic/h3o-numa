@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::VertexIndex;
+use h3on::VertexIndex;
 
 macro_rules! test {
     ($name:ident, $index:literal) => {

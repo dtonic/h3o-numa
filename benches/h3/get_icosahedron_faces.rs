@@ -2,18 +2,18 @@ use super::constants::{HEXAGONS, PENTAGONS};
 use criterion::{
     black_box, measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
 };
-use h3o::CellIndex;
+use h3on::CellIndex;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("getIcosahedronFaces");
 
     for (resolution, index) in HEXAGONS.iter().copied().enumerate() {
-        bench_h3o(&mut group, "h3o/Hexagon", index, resolution);
+        bench_h3on(&mut group, "h3on/Hexagon", index, resolution);
         bench_h3(&mut group, "h3/Hexagon", index, resolution);
     }
 
     for (resolution, index) in PENTAGONS.iter().copied().enumerate() {
-        bench_h3o(&mut group, "h3o/Pentagon", index, resolution);
+        bench_h3on(&mut group, "h3on/Pentagon", index, resolution);
         bench_h3(&mut group, "h3/Pentagon", index, resolution);
     }
 
@@ -22,7 +22,7 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o<T>(
+fn bench_h3on<T>(
     group: &mut BenchmarkGroup<T>,
     name: &'static str,
     index: u64,

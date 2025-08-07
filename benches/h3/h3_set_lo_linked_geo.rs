@@ -3,7 +3,7 @@ use ahash::HashSet;
 use criterion::{
     black_box, measurement::Measurement, BenchmarkGroup, BenchmarkId, Criterion,
 };
-use h3o::{
+use h3on::{
     geom::{SolventBuilder, TilerBuilder},
     CellIndex, Resolution,
 };
@@ -15,7 +15,7 @@ pub fn bench_full(c: &mut Criterion) {
     for resolution in 5..=11u32 {
         let cells = load_cells(resolution);
 
-        bench_h3o(&mut group, "h3o/Full", cells.clone(), resolution);
+        bench_h3on(&mut group, "h3on/Full", cells.clone(), resolution);
         bench_h3(&mut group, "h3/Full", cells, resolution);
     }
 
@@ -36,7 +36,7 @@ pub fn bench_holes(c: &mut Criterion) {
         let mut cells = cells.clone();
         cells.retain(|cell| !to_remove.contains(cell));
 
-        bench_h3o(&mut group, "h3o/Holes", cells.clone(), n);
+        bench_h3on(&mut group, "h3on/Holes", cells.clone(), n);
         bench_h3(&mut group, "h3/Holes", cells, n);
     }
 
@@ -60,7 +60,7 @@ pub fn bench_rings(c: &mut Criterion) {
         cells.sort_unstable();
         cells.dedup();
 
-        bench_h3o(&mut group, "h3o/Rings", cells.clone(), k);
+        bench_h3on(&mut group, "h3on/Rings", cells.clone(), k);
         bench_h3(&mut group, "h3/Rings", cells, k);
     }
 
@@ -134,7 +134,7 @@ pub fn bench_solvent(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o<T>(
+fn bench_h3on<T>(
     group: &mut BenchmarkGroup<T>,
     name: &'static str,
     indexes: Vec<CellIndex>,

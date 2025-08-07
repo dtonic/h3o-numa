@@ -1,13 +1,13 @@
 use super::constants::PENTAGONS;
 use criterion::{black_box, BenchmarkId, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 
 const HEXAGON: u64 = 0x8f734e64992d6d8;
 
 pub fn bench_hexagons(c: &mut Criterion) {
     let mut group = c.benchmark_group("isPentagon/Hexagon");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let index = CellIndex::try_from(HEXAGON).expect("cell index");
         b.iter(|| black_box(index).is_pentagon())
     });
@@ -23,7 +23,7 @@ pub fn bench_pentagons(c: &mut Criterion) {
 
     for (resolution, index) in PENTAGONS.iter().enumerate() {
         group.bench_with_input(
-            BenchmarkId::new("h3o", resolution),
+            BenchmarkId::new("h3on", resolution),
             index,
             |b, &index| {
                 let index = CellIndex::try_from(index).expect("cell index");

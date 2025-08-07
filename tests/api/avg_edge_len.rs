@@ -1,4 +1,4 @@
-use h3o::Resolution;
+use h3on::Resolution;
 use std::{
     fs::File,
     io::{BufRead, BufReader},

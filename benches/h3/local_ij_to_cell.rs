@@ -1,13 +1,13 @@
 use super::constants::HEXAGONS;
 use criterion::{black_box, BenchmarkId, Criterion};
-use h3o::{CellIndex, CoordIJ, LocalIJ};
+use h3on::{CellIndex, CoordIJ, LocalIJ};
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("localIjToCell");
 
     for (resolution, index) in HEXAGONS.iter().enumerate() {
         group.bench_with_input(
-            BenchmarkId::new("h3o", resolution),
+            BenchmarkId::new("h3on", resolution),
             index,
             |b, &index| {
                 let anchor = CellIndex::try_from(index).expect("anchor");

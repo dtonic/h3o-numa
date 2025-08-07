@@ -1,5 +1,5 @@
 use criterion::{black_box, Criterion};
-use h3o::{CellIndex, Resolution};
+use h3on::{CellIndex, Resolution};
 
 const RESOLUTION: Resolution = Resolution::Seven;
 
@@ -13,7 +13,7 @@ pub fn bench(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("uncompactCells");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         b.iter(|| {
             let iter = compacted.iter().copied();
             CellIndex::uncompact(black_box(iter), black_box(RESOLUTION))

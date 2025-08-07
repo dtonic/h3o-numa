@@ -84,10 +84,10 @@ impl FaceSet {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x089283470803ffff)?;
+    /// let index = h3on::CellIndex::try_from(0x089283470803ffff)?;
     /// let faces = index.icosahedron_faces();
     /// assert_eq!(faces.len(), 1);
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub const fn len(self) -> usize {
@@ -99,10 +99,10 @@ impl FaceSet {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x089283470803ffff)?;
+    /// let index = h3on::CellIndex::try_from(0x089283470803ffff)?;
     /// let faces = index.icosahedron_faces();
     /// assert!(!faces.is_empty());
-    /// # Ok::<(), h3o::error::InvalidCellIndex>(())
+    /// # Ok::<(), h3on::error::InvalidCellIndex>(())
     /// ```
     #[must_use]
     pub const fn is_empty(self) -> bool {
@@ -114,9 +114,9 @@ impl FaceSet {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x089283470803ffff)?;
+    /// let index = h3on::CellIndex::try_from(0x089283470803ffff)?;
     /// let faces = index.icosahedron_faces();
-    /// assert!(faces.contains(h3o::Face::try_from(7)?));
+    /// assert!(faces.contains(h3on::Face::try_from(7)?));
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
@@ -130,9 +130,9 @@ impl FaceSet {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::CellIndex::try_from(0x089283470803ffff)?;
+    /// let index = h3on::CellIndex::try_from(0x089283470803ffff)?;
     /// let faces = index.icosahedron_faces().iter().collect::<Vec<_>>();
-    /// assert_eq!(faces, vec![h3o::Face::try_from(7)?]);
+    /// assert_eq!(faces, vec![h3on::Face::try_from(7)?]);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn iter(self) -> impl Iterator<Item = Face> {

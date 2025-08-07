@@ -5,7 +5,7 @@ pub fn bench(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("degsToRads");
 
-    group.bench_function("h3o", |b| b.iter(|| black_box(VALUE).to_radians()));
+    group.bench_function("h3on", |b| b.iter(|| black_box(VALUE).to_radians()));
     group.bench_function("h3", |b| {
         b.iter(|| unsafe { h3ron_h3_sys::degsToRads(black_box(VALUE)) })
     });

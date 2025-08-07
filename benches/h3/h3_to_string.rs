@@ -1,5 +1,5 @@
 use criterion::{black_box, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::{ffi::CString, fmt::Write};
 
 const INPUT: u64 = 0x8f734e64992d6d8;
@@ -8,7 +8,7 @@ const SIZE: usize = 16; // u64 is at most a 16-char hexstring.
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("h3ToString");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let index = CellIndex::try_from(INPUT).expect("cell index");
         let mut s = String::with_capacity(SIZE);
         b.iter(|| write!(&mut s, "{}", black_box(index)))

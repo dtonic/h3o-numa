@@ -54,7 +54,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// use h3o::Resolution;
+    /// use h3on::Resolution;
     ///
     /// assert!(Resolution::Eleven.is_class3());
     /// assert!(!Resolution::Two.is_class3());
@@ -69,7 +69,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// use h3o::Resolution;
+    /// use h3on::Resolution;
     ///
     /// assert_eq!(Resolution::Eleven.succ(), Some(Resolution::Twelve));
     /// assert!(Resolution::Fifteen.succ().is_none());
@@ -85,7 +85,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// use h3o::Resolution;
+    /// use h3on::Resolution;
     ///
     /// assert_eq!(Resolution::Eleven.pred(), Some(Resolution::Ten));
     /// assert!(Resolution::Zero.pred().is_none());
@@ -106,7 +106,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// use h3o::Resolution;
+    /// use h3on::Resolution;
     ///
     /// // From 5 to 7.
     /// let res = Resolution::range(
@@ -142,7 +142,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// let avg_area = h3o::Resolution::Three.area_rads2();
+    /// let avg_area = h3on::Resolution::Three.area_rads2();
     /// ```
     #[must_use]
     pub const fn area_rads2(self) -> f64 {
@@ -172,7 +172,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// let avg_area = h3o::Resolution::Three.area_km2();
+    /// let avg_area = h3on::Resolution::Three.area_km2();
     /// ```
     #[must_use]
     pub const fn area_km2(self) -> f64 {
@@ -202,7 +202,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// let avg_area = h3o::Resolution::Three.area_m2();
+    /// let avg_area = h3on::Resolution::Three.area_m2();
     /// ```
     #[must_use]
     pub const fn area_m2(self) -> f64 {
@@ -232,7 +232,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// let avg_edge_len = h3o::Resolution::Three.edge_length_rads();
+    /// let avg_edge_len = h3on::Resolution::Three.edge_length_rads();
     /// ```
     #[must_use]
     pub const fn edge_length_rads(self) -> f64 {
@@ -262,7 +262,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// let avg_edge_len = h3o::Resolution::Three.edge_length_km();
+    /// let avg_edge_len = h3on::Resolution::Three.edge_length_km();
     /// ```
     #[must_use]
     pub const fn edge_length_km(self) -> f64 {
@@ -292,7 +292,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// let avg_edge_len = h3o::Resolution::Three.edge_length_m();
+    /// let avg_edge_len = h3on::Resolution::Three.edge_length_m();
     /// ```
     #[must_use]
     pub const fn edge_length_m(self) -> f64 {
@@ -321,7 +321,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// let nb_cells = h3o::Resolution::Three.cell_count();
+    /// let nb_cells = h3on::Resolution::Three.cell_count();
     /// ```
     #[must_use]
     pub const fn cell_count(self) -> u64 {
@@ -351,7 +351,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// assert_eq!(h3o::Resolution::pentagon_count(), 12);
+    /// assert_eq!(h3on::Resolution::pentagon_count(), 12);
     /// ```
     #[must_use]
     pub const fn pentagon_count() -> u8 {
@@ -363,7 +363,7 @@ impl Resolution {
     /// # Example
     ///
     /// ```
-    /// let pentagons = h3o::Resolution::Two.pentagons().collect::<Vec<_>>();
+    /// let pentagons = h3on::Resolution::Two.pentagons().collect::<Vec<_>>();
     /// ```
     pub fn pentagons(self) -> impl Iterator<Item = CellIndex> {
         // Template for a resolution 0 index:

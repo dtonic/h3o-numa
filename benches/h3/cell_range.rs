@@ -1,5 +1,5 @@
 use criterion::{black_box, BenchmarkId, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 
 pub fn bench_succ(c: &mut Criterion) {
     let hexagons: [u64; 16] = [
@@ -24,7 +24,7 @@ pub fn bench_succ(c: &mut Criterion) {
 
     for (resolution, index) in hexagons.iter().enumerate() {
         group.bench_with_input(
-            BenchmarkId::new("h3o", resolution),
+            BenchmarkId::new("h3on", resolution),
             index,
             |b, &index| {
                 let index = CellIndex::try_from(index).expect("valid index");
@@ -59,7 +59,7 @@ pub fn bench_pred(c: &mut Criterion) {
 
     for (resolution, index) in hexagons.iter().enumerate() {
         group.bench_with_input(
-            BenchmarkId::new("h3o", resolution),
+            BenchmarkId::new("h3on", resolution),
             index,
             |b, &index| {
                 let index = CellIndex::try_from(index).expect("valid index");

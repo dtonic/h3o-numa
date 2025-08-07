@@ -1,4 +1,4 @@
-use h3o::{CellIndex, Face};
+use h3on::{CellIndex, Face};
 
 #[test]
 fn len() {

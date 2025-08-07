@@ -1,5 +1,5 @@
 use criterion::{black_box, BenchmarkId, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::os::raw::c_int;
 
 const HEXAGON: u64 = 0x08b1_fb46_622d_efff;
@@ -13,7 +13,7 @@ pub fn bench(c: &mut Criterion) {
         let mut cells = vec![0; size];
 
         group.bench_with_input(
-            BenchmarkId::new("h3o", k),
+            BenchmarkId::new("h3on", k),
             &HEXAGON,
             |b, &hexagon| {
                 let index = CellIndex::try_from(hexagon).expect("hex index");

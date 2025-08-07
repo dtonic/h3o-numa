@@ -1,5 +1,5 @@
 use criterion::{black_box, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 
 pub fn bench(c: &mut Criterion) {
     const ORIGIN: u64 = 0x0891_fb46_622f_ffff;
@@ -7,7 +7,7 @@ pub fn bench(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("cellsToDirectedEdge");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         let origin = CellIndex::try_from(ORIGIN).expect("cell index");
         let destination = CellIndex::try_from(DESTINATION).expect("cell index");
         b.iter(|| black_box(origin).edge(black_box(destination)))

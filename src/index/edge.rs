@@ -24,7 +24,7 @@ impl Edge {
     /// # Example
     ///
     /// ```
-    /// let edges = h3o::Edge::iter().collect::<Vec<_>>();
+    /// let edges = h3on::Edge::iter().collect::<Vec<_>>();
     /// ```
     pub fn iter() -> impl Iterator<Item = Self> {
         // SAFETY: values from 0 to MAX are valid directions.
@@ -105,8 +105,8 @@ impl DirectedEdgeIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
-    /// assert_eq!(index.edge(), h3o::Edge::try_from(3)?);
+    /// let index = h3on::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// assert_eq!(index.edge(), h3on::Edge::try_from(3)?);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
@@ -120,8 +120,8 @@ impl DirectedEdgeIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
-    /// assert_eq!(index.origin(), h3o::CellIndex::try_from(0x8a194e699ab7fff)?);
+    /// let index = h3on::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// assert_eq!(index.origin(), h3on::CellIndex::try_from(0x8a194e699ab7fff)?);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
@@ -135,8 +135,8 @@ impl DirectedEdgeIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff)?;
-    /// assert_eq!(index.destination(), h3o::CellIndex::try_from(0x8a194e699a97fff)?);
+    /// let index = h3on::DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff)?;
+    /// assert_eq!(index.destination(), h3on::CellIndex::try_from(0x8a194e699a97fff)?);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
@@ -154,10 +154,10 @@ impl DirectedEdgeIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff)?;
+    /// let index = h3on::DirectedEdgeIndex::try_from(0x13a1_94e6_99ab_7fff)?;
     /// assert_eq!(index.cells(), (
-    ///     h3o::CellIndex::try_from(0x8a194e699ab7fff)?,
-    ///     h3o::CellIndex::try_from(0x8a194e699a97fff)?,
+    ///     h3on::CellIndex::try_from(0x8a194e699ab7fff)?,
+    ///     h3on::CellIndex::try_from(0x8a194e699a97fff)?,
     /// ));
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -171,7 +171,7 @@ impl DirectedEdgeIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// let index = h3on::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
     /// let boundary = index.boundary();
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -202,7 +202,7 @@ impl DirectedEdgeIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// let index = h3on::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
     /// assert_eq!(index.length_rads(), 1.1795418098325597e-5);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -220,7 +220,7 @@ impl DirectedEdgeIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// let index = h3on::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
     /// assert_eq!(index.length_km(), 0.07514869340636812);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -234,7 +234,7 @@ impl DirectedEdgeIndex {
     /// # Example
     ///
     /// ```
-    /// let index = h3o::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
+    /// let index = h3on::DirectedEdgeIndex::try_from(0x13a194e699ab7fff)?;
     /// assert_eq!(index.length_m(), 75.14869340636812);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```

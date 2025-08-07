@@ -1,4 +1,4 @@
-use h3o::VertexIndex;
+use h3on::VertexIndex;
 
 #[test]
 fn try_from_str() {

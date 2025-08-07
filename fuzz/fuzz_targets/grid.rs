@@ -1,6 +1,6 @@
 #![no_main]
 
-use h3o::{max_grid_disk_size, CellIndex};
+use h3on::{max_grid_disk_size, CellIndex};
 use libfuzzer_sys::fuzz_target;
 use std::os::raw::c_int;
 

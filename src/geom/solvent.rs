@@ -22,7 +22,7 @@ impl Solvent {
     /// # Example
     ///
     /// ```
-    /// use h3o::{geom::SolventBuilder, CellIndex, Resolution};
+    /// use h3on::{geom::SolventBuilder, CellIndex, Resolution};
     ///
     /// let index = CellIndex::try_from(0x089283470803ffff)?;
     /// let cells = index.children(Resolution::Twelve).collect::<Vec<_>>();

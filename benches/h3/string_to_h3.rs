@@ -1,5 +1,5 @@
 use criterion::{black_box, Criterion};
-use h3o::{CellIndex, DirectedEdgeIndex, VertexIndex};
+use h3on::{CellIndex, DirectedEdgeIndex, VertexIndex};
 use std::ffi::CString;
 
 const CELL_INDEX: &str = "08f734e64992d6d8";
@@ -9,7 +9,7 @@ const VERT_INDEX: &str = "23b734e649928fff";
 pub fn bench_cell(c: &mut Criterion) {
     let mut group = c.benchmark_group("stringToH3");
 
-    group.bench_function("h3o/Cell", |b| {
+    group.bench_function("h3on/Cell", |b| {
         let s = CELL_INDEX.to_owned();
         b.iter(|| black_box(&s).parse::<CellIndex>())
     });
@@ -27,7 +27,7 @@ pub fn bench_cell(c: &mut Criterion) {
 pub fn bench_edge(c: &mut Criterion) {
     let mut group = c.benchmark_group("stringToH3");
 
-    group.bench_function("h3o/Edge", |b| {
+    group.bench_function("h3on/Edge", |b| {
         let s = EDGE_INDEX.to_owned();
         b.iter(|| black_box(&s).parse::<DirectedEdgeIndex>())
     });
@@ -45,7 +45,7 @@ pub fn bench_edge(c: &mut Criterion) {
 pub fn bench_vertex(c: &mut Criterion) {
     let mut group = c.benchmark_group("stringToH3");
 
-    group.bench_function("h3o/Vertex", |b| {
+    group.bench_function("h3on/Vertex", |b| {
         let s = VERT_INDEX.to_owned();
         b.iter(|| black_box(&s).parse::<VertexIndex>())
     });

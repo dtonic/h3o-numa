@@ -1,5 +1,5 @@
 use criterion::{black_box, BenchmarkId, Criterion};
-use h3o::{CellIndex, Resolution};
+use h3on::{CellIndex, Resolution};
 
 pub fn bench(c: &mut Criterion) {
     const INDEX: u64 = 0x8f734e64992d6d8;
@@ -7,7 +7,7 @@ pub fn bench(c: &mut Criterion) {
 
     for resolution in 0..=15 {
         group.bench_with_input(
-            BenchmarkId::new("h3o", resolution),
+            BenchmarkId::new("h3on", resolution),
             &resolution,
             |b, &resolution| {
                 let resolution =

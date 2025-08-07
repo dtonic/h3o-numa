@@ -1,5 +1,5 @@
 use criterion::{black_box, BenchmarkId, Criterion};
-use h3o::{LatLng, Resolution};
+use h3on::{LatLng, Resolution};
 
 pub fn bench(c: &mut Criterion) {
     let src = LatLng::new(30.3157384429565, 104.15339644867949).expect("src");
@@ -12,7 +12,7 @@ pub fn bench(c: &mut Criterion) {
         let dst = dst.to_cell(resolution);
 
         group.bench_with_input(
-            BenchmarkId::new("h3o", res),
+            BenchmarkId::new("h3on", res),
             &(src, dst),
             |b, (src, dst)| {
                 b.iter(|| black_box(src).grid_distance(black_box(*dst)))

@@ -1,6 +1,6 @@
 use super::h3api;
 use float_eq::assert_float_eq;
-use h3o::{CellIndex, LatLng, Resolution, Vertex};
+use h3on::{CellIndex, LatLng, Resolution, Vertex};
 
 macro_rules! exhaustive_test {
     ($name:ident, $resolution:literal) => {

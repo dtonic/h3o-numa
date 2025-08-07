@@ -1,10 +1,10 @@
 use criterion::{black_box, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("getRes0Cells");
 
-    group.bench_function("h3o", |b| {
+    group.bench_function("h3on", |b| {
         b.iter(|| {
             for base_cell in CellIndex::base_cells() {
                 let _ = black_box(base_cell);

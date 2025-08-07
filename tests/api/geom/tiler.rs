@@ -1,6 +1,6 @@
 use super::utils::load_polygon;
 use geo::{coord, polygon, LineString, MultiPolygon, Polygon, Rect};
-use h3o::{
+use h3on::{
     geom::{ContainmentMode, TilerBuilder},
     CellIndex, LatLng, Resolution,
 };
@@ -444,10 +444,10 @@ fn fully_in_cell_contained_geometry() {
     assert_eq!(result, 1);
 }
 
-// https://github.com/HydroniumLabs/h3o/issues/21
+// https://github.com/HydroniumLabs/h3on/issues/21
 #[test]
 fn issue_21() {
-    let poly = load_polygon("h3o_issue21");
+    let poly = load_polygon("h3on_issue21");
     let mut tiler = TilerBuilder::new(Resolution::Zero)
         .containment_mode(ContainmentMode::Covers)
         .build();
@@ -456,10 +456,10 @@ fn issue_21() {
     assert_eq!(count, 1);
 }
 
-// https://github.com/HydroniumLabs/h3o/issues/23
+// https://github.com/HydroniumLabs/h3on/issues/23
 #[test]
 fn issue_23() {
-    let poly = load_polygon("h3o_issue23");
+    let poly = load_polygon("h3on_issue23");
     let mut tiler = TilerBuilder::new(Resolution::Six)
         .containment_mode(ContainmentMode::Covers)
         .disable_transmeridian_heuristic()

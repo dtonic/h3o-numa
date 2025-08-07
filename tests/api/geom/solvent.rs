@@ -2,7 +2,7 @@ use super::utils::load_polygon;
 use ahash::HashSet;
 use approx::{assert_relative_eq, relative_eq};
 use geo::{polygon, Area, BooleanOps, LineString, MultiPolygon, Polygon};
-use h3o::{
+use h3on::{
     geom::{SolventBuilder, TilerBuilder},
     CellIndex, Resolution,
 };
@@ -476,7 +476,7 @@ fn holes_heterogeneous() {
     assert_hetero_equal_homo(compacted, resolution, &expected);
 }
 
-// See https://github.com/HydroniumLabs/h3o/issues/12
+// See https://github.com/HydroniumLabs/h3on/issues/12
 #[test]
 fn issue_12() {
     let set = [

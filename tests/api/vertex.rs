@@ -1,4 +1,4 @@
-use h3o::Vertex;
+use h3on::Vertex;
 
 #[test]
 fn try_from_u8() {

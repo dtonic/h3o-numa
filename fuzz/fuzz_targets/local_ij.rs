@@ -1,6 +1,6 @@
 #![no_main]
 
-use h3o::{CellIndex, CoordIJ, LocalIJ};
+use h3on::{CellIndex, CoordIJ, LocalIJ};
 use libfuzzer_sys::fuzz_target;
 
 #[derive(Debug, arbitrary::Arbitrary)]

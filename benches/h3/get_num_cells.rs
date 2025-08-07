@@ -1,12 +1,12 @@
 use criterion::{black_box, BenchmarkId, Criterion};
-use h3o::Resolution;
+use h3on::Resolution;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("getNumCells");
 
     for resolution in 0..=15 {
         group.bench_with_input(
-            BenchmarkId::new("h3o", resolution),
+            BenchmarkId::new("h3on", resolution),
             &resolution,
             |b, &resolution| {
                 let resolution =

@@ -1,5 +1,5 @@
 use criterion::{black_box, Bencher, BenchmarkId, Criterion};
-use h3o::DirectedEdgeIndex;
+use h3on::DirectedEdgeIndex;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("getDirectedEdgeDestination");
@@ -15,9 +15,9 @@ pub fn bench(c: &mut Criterion) {
     .enumerate()
     {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Hexagon", resolution),
+            BenchmarkId::new("h3on/Hexagon", resolution),
             hexagon,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Hexagon", resolution),
@@ -26,9 +26,9 @@ pub fn bench(c: &mut Criterion) {
         );
 
         group.bench_with_input(
-            BenchmarkId::new("h3o/Pentagon", resolution),
+            BenchmarkId::new("h3on/Pentagon", resolution),
             pentagon,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Pentagon", resolution),
@@ -42,7 +42,7 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o(b: &mut Bencher<'_>, index: &u64) {
+fn bench_h3on(b: &mut Bencher<'_>, index: &u64) {
     let index = DirectedEdgeIndex::try_from(*index).expect("edge index");
     b.iter(|| black_box(index).destination())
 }

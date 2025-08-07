@@ -1,5 +1,5 @@
 use criterion::{black_box, Bencher, BenchmarkId, Criterion};
-use h3o::VertexIndex;
+use h3on::VertexIndex;
 
 const HEXAGONS: [u64; 6] = [
     0x24b734e649928fff,
@@ -23,9 +23,9 @@ pub fn bench(c: &mut Criterion) {
 
     for (vertex, index) in HEXAGONS.iter().enumerate() {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Hexagon", vertex),
+            BenchmarkId::new("h3on/Hexagon", vertex),
             index,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Hexagon", vertex),
@@ -36,9 +36,9 @@ pub fn bench(c: &mut Criterion) {
 
     for (vertex, index) in PENTAGONS.iter().enumerate() {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Pentagon", vertex),
+            BenchmarkId::new("h3on/Pentagon", vertex),
             index,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Pentagon", vertex),
@@ -52,7 +52,7 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o(b: &mut Bencher<'_>, index: &u64) {
+fn bench_h3on(b: &mut Bencher<'_>, index: &u64) {
     b.iter(|| VertexIndex::try_from(black_box(*index)))
 }
 
