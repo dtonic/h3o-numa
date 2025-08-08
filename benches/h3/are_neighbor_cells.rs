@@ -10,17 +10,20 @@ pub fn bench(c: &mut Criterion) {
         bench_h3on(b, index, origin)
     });
     group.bench_function("h3/SameParentCenter", |b| bench_h3(b, index, origin));
+    group.bench_function("h3o/SameParentCenter", |b| bench_h3o(b, index, origin));
 
     let (origin, index) = (0x0890153a1017ffff, 0x0890153a1013ffff);
     group
         .bench_function("h3on/SameParentOther", |b| bench_h3on(b, index, origin));
     group.bench_function("h3/SameParentOther", |b| bench_h3(b, index, origin));
+    group.bench_function("h3o/SameParentOther", |b| bench_h3o(b, index, origin));
 
     // This pair uses the fast unsafe implementation of grid disk.
     let (origin, index) = (0x0890153a1017ffff, 0x0890153a10bbffff);
     group
         .bench_function("h3on/DifferentParent", |b| bench_h3on(b, index, origin));
     group.bench_function("h3/DifferentParent", |b| bench_h3(b, index, origin));
+    group.bench_function("h3o/DifferentParent", |b| bench_h3o(b, index, origin));
 
     // This pair uses the slow safe implementation of grid disk.
     let (origin, index) = (0x08908000001bffff, 0x08908000000fffff);
@@ -29,6 +32,9 @@ pub fn bench(c: &mut Criterion) {
     });
     group.bench_function("h3/DifferentParentFallback", |b| {
         bench_h3(b, index, origin)
+    });
+    group.bench_function("h3o/DifferentParentFallback", |b| {
+        bench_h3o(b, index, origin)
     });
 
     group.finish();
@@ -51,4 +57,10 @@ fn bench_h3(b: &mut Bencher<'_>, index: u64, origin: u64) {
             &mut out,
         )
     })
+}
+
+fn bench_h3o(b: &mut Bencher<'_>, index: u64, origin: u64) {
+    let origin = h3o::CellIndex::try_from(origin).expect("origin");
+    let index = h3o::CellIndex::try_from(index).expect("index");
+    b.iter(|| black_box(origin).is_neighbor_with(black_box(index)))
 }
