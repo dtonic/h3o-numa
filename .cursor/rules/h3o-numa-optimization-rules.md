@@ -231,34 +231,49 @@ cargo clippy --all-targets --all-features
 - 병렬화 기반 구조 확립으로 NUMA 최적화 적용 준비 완료
 - 성능 벤치마크를 통한 병렬화 효과 검증 가능 (h3o vs h3on 비교)
 
-### 🔹 STEP 3. NUMA-aware 스레드풀 구성 (`fork_union`)
+
+
+
+### 🔧 Pre-STEP3 사전 개선 (반드시 선적용)
 
 ```rust
-// DONE: fork_union::linux_colocated_pool() 사용 방안 제시
-// DONE: NUMA 노드별 chunking 및 로컬 작업 분할 전략 수립
-// TODO: 스레드 간 메모리 접근이 cross-node 되지 않도록 분리
+// TODO: (STEP2) 고정 임계치 제거 → with_min_len/with_max_len 도입
+//  - job_min = max(1024, total_len / (num_threads * 4))
+//  - job_max = job_min * 4
+
+// TODO: (STEP2) 입력을 BaseCell/Face 단위로 프리-파티셔닝
+//  - 이후 NUMA 노드 매핑 시 cross-node 접근 감소
+
+// TODO: (STEP2) rayon ThreadPoolBuilder 도입으로 커스텀 풀 주입 구조 완성
+//  - spawn_handler 훅 제공 (향후 affinity/hwloc 연결)
 ```
 
-> 🎯 목적: 연산을 NUMA 로컬 영역 내에서 실행, 스레드 마이그레이션 제거
+### 🔹 STEP 3. NUMA-aware 스레드/메모리 (개선안)
 
-**구체적 적용 방안:**
-1. **NUMA-aware 스레드풀 설정**
-   ```rust
-   use fork_union::linux_colocated_pool;
-   
-   // NUMA 노드별 스레드풀 구성
-   let numa_pool = linux_colocated_pool().expect("NUMA pool creation failed");
-   ```
+- **스레드풀/어피니티 (2트랙)**  
+  - 기본(안정): `rayon` + (`affinity` | `hwloc`)로 코어/NUMA 노드 바인딩  
+  - 옵션(실험): `feature("numa-fork-union")` 활성 시 `fork_union` 사용
+- **데이터↔노드 매핑**: 청크 *i* → NUMA 노드 *(i % N)*, BaseCell 단위 청크 유지
+- **메모리 로컬리티**: `feature("numanji")` 우선, 폴백 또는 대안으로 `mimalloc` 글로벌 할당자
 
-2. **데이터 분할 전략**
-   - `grid_disks_fast`: 인덱스별 NUMA 노드 분산
-   - `compact`: 청크 단위 NUMA 노드별 처리
-   - `into_coverage`: 폴리곤별 NUMA 노드 분산
+```rust
+// TODO: 두 트랙 병행 적용
+// 기본(안정): rayon + (affinity | hwloc) 로 코어/노드 바인딩
+// 옵션(실험): feature("numa-fork-union") 활성화 시 fork_union 사용
+
+// TODO: 데이터-노드 매핑 규칙
+// - 청크 i -> NUMA node (i % N)
+// - BaseCell 단위 청크 유지로 경계 교차 최소화
+
+// TODO: 메모리 로컬리티
+// - feature("numanji") 활성 시 LocalAllocator 우선, 실패 시 폴백
+// - 또는 mimalloc 글로벌 할당자 채택(옵션)으로 NUMA-aware 할당
+```
 
 ### 🔹 STEP 4. NUMA-aware 메모리 할당 (`numanji`)
 
 ```rust
-// DONE: LocalAllocator를 사용해 벡터/버퍼 NUMA 노드에 고정 방안 제시
+// TODO: LocalAllocator를 사용해 벡터/버퍼 NUMA 노드에 고정 방안 제시
 // TODO: 연산 중 메모리 locality 측정 및 비교
 ```
 
@@ -281,8 +296,8 @@ cargo clippy --all-targets --all-features
 ### 🔹 STEP 5. 공용 테이블 및 캐시 파티셔닝
 
 ```rust
-// DONE: geometry lookup table 등 read-heavy 구조 복제 방안 제시
-// DONE: 각 NUMA 노드에서 로컬 참조 가능하도록 구성 전략 수립
+// TODO: geometry lookup table 등 read-heavy 구조 복제 방안 제시
+// TODO: 각 NUMA 노드에서 로컬 참조 가능하도록 구성 전략 수립
 ```
 
 > 🎯 목적: 캐시 경합(lock contention), false sharing 제거
@@ -303,8 +318,8 @@ cargo clippy --all-targets --all-features
 ### 🔹 STEP 6. 성능 벤치마크 및 회귀 검증 (`criterion`)
 
 ```rust
-// DONE: h3, h3o, h3on의 동일 연산 비교 벤치마크 구성 방안 제시
-// DONE: @benches 기준 동일 입력/인터페이스로 벤치 작성 전략 수립
+// TODO: h3, h3o, h3on의 동일 연산 비교 벤치마크 구성 방안 제시
+// TODO: @benches 기준 동일 입력/인터페이스로 벤치 작성 전략 수립
 // TODO: feature flag 및 결과 분기 라벨 적용 (e.g. polygon_to_cells_h3on)
 // TODO: benchmark 결과 CSV/Markdown 기록
 ```
