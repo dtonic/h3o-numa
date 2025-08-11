@@ -248,50 +248,271 @@ cargo clippy --all-targets --all-features
 //       DONE: spawn_handler 훅 추가 (향후 affinity/hwloc 연결 대비)
 ```
 
-### 🔹 STEP 3. NUMA-aware 스레드/메모리 (개선안)
+좋아, 지금 합의한 “코어 고정 → 즉시 first‑touch 초기화” 흐름으로 **STEP 3 & 4**를 통째로 갱신해놨어. 그대로 Rulebook에 붙여 쓰면 돼.
 
-- **스레드풀/어피니티 (2트랙)**  
-  - 기본(안정): `rayon` + (`affinity` | `hwloc`)로 코어/NUMA 노드 바인딩  
-  - 옵션(실험): `feature("numa-fork-union")` 활성 시 `fork_union` 사용
-- **데이터↔노드 매핑**: 청크 *i* → NUMA 노드 *(i % N)*, BaseCell 단위 청크 유지
-- **메모리 로컬리티**: `feature("numanji")` 우선, 폴백 또는 대안으로 `mimalloc` 글로벌 할당자
+---
 
-```rust
-// TODO: 두 트랙 병행 적용
-// 기본(안정): rayon + (affinity | hwloc) 로 코어/노드 바인딩
-// 옵션(실험): feature("numa-fork-union") 활성화 시 fork_union 사용
+# 🔹 STEP 3 & 4. NUMA‑aware 스레드 생성 + 통합 로컬 메모리 초기화（개선본）
 
-// TODO: 데이터-노드 매핑 규칙
-// - 청크 i -> NUMA node (i % N)
-// - BaseCell 단위 청크 유지로 경계 교차 최소화
+> 🎯 **목표:** `rayon::ThreadPoolBuilder.spawn_handler` 안에서 **(1) 코어 고정**과 **(2) first‑touch 초기화**를 **원자적**으로 수행한다. 이렇게 하면 스레드와 데이터가 동일 NUMA 노드에 존재하도록 강제되어 cross‑node 접근을 최소화한다.
 
-// TODO: 메모리 로컬리티
-// - feature("numanji") 활성 시 LocalAllocator 우선, 실패 시 폴백
-// - 또는 mimalloc 글로벌 할당자 채택(옵션)으로 NUMA-aware 할당
+## ✅ 의존성/기본 정책
+
+* **필수:** `hwlocality`(토폴로지 탐색), `core_affinity`(코어 바인딩)
+* **선택:** `mimalloc`(전역 할당자) — *Step4 효과 측정 후에만 도입*
+* **기본 정책:** Linux `first‑touch` 활용, 별도 NUMA allocator 불필요
+
+```toml
+# Cargo.toml (예시)
+[features]
+numa = ["hwlocality", "core_affinity"]
+bench = ["criterion"]
+
+[dependencies]
+rayon = "1"
+core_affinity = { version = "0.8", optional = true }
+hwlocality = { version = "1", optional = true }
+once_cell = "1"
 ```
 
-### 🔹 STEP 4. NUMA-aware 메모리 할당 (`numanji`)
+---
+
+## 🧩 설계 개요
+
+1. **토폴로지 로드/캐시**
+
+* 시작 시 1회 `hwlocality`로 **노드 수 / 노드별 코어 리스트**를 확보·캐시.
+
+2. **작업 파티셔닝**
+
+* 입력을 **BaseCell/Face** 단위로 분해 → `node_id = basecell_id % numa_nodes`.
+* 각 노드 큐에 청크를 push (균형 고려: 노드별 코어 수로 가중 분배).
+
+3. **스레드풀 구성 & 원자적 초기화**
+
+* `ThreadPoolBuilder` + `spawn_handler`에서
+
+  * (a) `core_affinity::set_for_current(core_id)`
+  * (b) **즉시** 로컬 버퍼/캐시를 `resize/fill`로 초기화 → **first‑touch** 발생
+  * (c) 이후 해당 워커는 자기 노드 큐의 작업만 처리
+
+---
+
+## 🛠 구현 스캐폴딩（예시 코드）
+
+> 파일 위치 제안: `src/numa/mod.rs`, `src/numa/topo.rs`, `src/numa/pool.rs`
 
 ```rust
-// TODO: LocalAllocator를 사용해 벡터/버퍼 NUMA 노드에 고정 방안 제시
-// TODO: 연산 중 메모리 locality 측정 및 비교
+// src/numa/topo.rs
+#[cfg(feature = "numa")]
+pub struct NumaTopology {
+    pub nodes: usize,
+    pub cores_per_node: Vec<Vec<usize>>, // logical core ids per node
+}
+
+#[cfg(feature = "numa")]
+pub fn load_topology() -> NumaTopology {
+    use hwlocality::Topology;
+    let topo = Topology::new().expect("hwloc topology");
+    let nodes = topo.objects_with_type(&hwlocality::ObjectType::NUMANode)
+                    .map(|v| v.len())
+                    .unwrap_or(1);
+
+    // 간단 샘플: NUMA 노드별 PU(core) id 수집
+    let mut cores_per_node = vec![Vec::new(); nodes];
+    for (nid, node) in topo.objects_with_type(&hwlocality::ObjectType::NUMANode)
+                           .unwrap_or_default()
+                           .into_iter()
+                           .enumerate()
+    {
+        let pus = node
+            .children()
+            .flat_map(|c| c.pus())
+            .map(|pu| pu.os_index())
+            .collect::<Vec<_>>();
+        cores_per_node[nid] = pus;
+    }
+
+    NumaTopology { nodes, cores_per_node }
+}
 ```
 
-> 🎯 목적: cross-node memory access 방지, 캐시 활용도 향상
+```rust
+// src/numa/pool.rs
+#[cfg(feature = "numa")]
+use once_cell::unsync::OnceCell;
 
-**구체적 적용 방안:**
-1. **메모리 할당 최적화**
-   ```rust
-   use numanji::LocalAllocator;
-   
-   // NUMA 노드별 로컬 할당자 사용
-   let local_alloc = LocalAllocator::new(numa_node_id);
-   let mut cells = Vec::with_capacity_in(capacity, &local_alloc);
-   ```
+#[cfg(feature = "numa")]
+thread_local! {
+    // 노드 로컬 캐시/버퍼 보관 (예: lookup table, scratch buffers)
+    static NODE_LOCAL: OnceCell<NodeLocal> = OnceCell::new();
+}
 
-2. **데이터 구조 최적화**
-   - `HashSet` 대신 NUMA-aware 해시맵 사용
-   - 스크래치패드 메모리 로컬 할당
+#[cfg(feature = "numa")]
+pub struct NodeLocal {
+    pub scratch: Vec<u8>,          // 예시 버퍼
+    // TODO: geometry LUT 복제본 등 필요한 구조체 추가
+}
+
+#[cfg(feature = "numa")]
+impl NodeLocal {
+    fn new(cap: usize) -> Self {
+        let mut scratch = Vec::with_capacity(cap);
+        // First-touch: 실제 페이지 매핑 유도
+        scratch.resize(cap, 0);
+        Self { scratch }
+    }
+}
+
+#[cfg(feature = "numa")]
+pub fn build_numa_pool<F, R>(
+    topo: &crate::numa::topo::NumaTopology,
+    per_worker_buf: usize,
+    work: F,
+) -> R
+where
+    F: FnOnce() -> R + Send,
+    R: Send,
+{
+    use rayon::ThreadPoolBuilder;
+
+    // 워커 수 = 모든 노드의 코어 수 합
+    let worker_cores: Vec<usize> = topo.cores_per_node.iter().flatten().copied().collect();
+    let workers = worker_cores.len().max(1);
+
+    let pool = ThreadPoolBuilder::new()
+        .num_threads(workers)
+        .spawn_handler(|thread| {
+            // ★ 원자적 처리: 코어 고정 → 즉시 first-touch 초기화
+            let core_id = worker_cores[thread.index() % worker_cores.len()];
+            core_affinity::set_for_current(core_affinity::CoreId { id: core_id });
+
+            // 노드 로컬 버퍼/캐시 초기화 (first-touch)
+            NODE_LOCAL.with(|cell| {
+                let _ = cell.set(NodeLocal::new(per_worker_buf));
+            });
+
+            std::thread::Builder::new()
+                .name(format!("h3on-numa-{}", thread.index()))
+                .spawn(move || thread.run())
+                .map(|_| ())
+        })
+        .build()
+        .expect("failed to build NUMA-aware pool");
+
+    pool.install(work)
+}
+
+#[cfg(feature = "numa")]
+pub fn with_node_local<T>(f: impl FnOnce(&NodeLocal) -> T) -> T {
+    NODE_LOCAL.with(|cell| {
+        let nl = cell.get().expect("NodeLocal not initialized");
+        f(nl)
+    })
+}
+```
+
+```rust
+// src/numa/mod.rs
+#[cfg(feature = "numa")]
+pub mod topo;
+#[cfg(feature = "numa")]
+pub mod pool;
+```
+
+**사용 예 (핵심 병목 함수 내부):**
+
+```rust
+#[cfg(feature = "numa")]
+pub fn polygon_to_cells_numa(input: &Polygon, res: u8) -> Vec<Cell> {
+    use crate::numa::{topo::load_topology, pool::build_numa_pool, pool::with_node_local};
+
+    let topo = load_topology();
+    let per_worker_buf = estimate_buffer_size(input, res);
+
+    // 파티셔닝: BaseCell/Face 단위 → node_id = basecell_id % topo.nodes
+    let node_buckets = partition_by_node(input, res, topo.nodes);
+
+    build_numa_pool(&topo, per_worker_buf, || {
+        use rayon::prelude::*;
+        let mut out = Vec::new();
+
+        // 각 노드 버킷을 병렬로 처리 (워커는 이미 코어 고정 + 로컬 버퍼 보유)
+        node_buckets
+            .into_par_iter()
+            .flat_map(|chunk| {
+                with_node_local(|nl| {
+                    // nl.scratch 를 활용한 로컬 처리 (cross-node 접근 없음)
+                    compute_chunk_with_scratch(&chunk, res, nl)
+                })
+            })
+            .collect_into_vec(&mut out);
+
+        out
+    })
+}
+```
+
+---
+
+## 🧪 검증/수용 기준（Acceptance Criteria）
+
+**기능**
+
+* [ ] 스레드 시작 직후 `core_affinity::set_for_current`가 성공해야 한다.
+* [ ] 코어 고정 직후 로컬 버퍼가 `resize/fill`로 초기화된다(메모리 first‑touch 보장).
+* [ ] 노드 로컬 캐시/버퍼는 `thread_local!`로 스레드 간 공유되지 않는다.
+
+**성능**
+
+* [ ] Step2 대비 Step3에서 cross‑node 메모리 접근 비율이 유의미하게 감소(`numastat`, `perf c2c` 등으로 확인 가능).
+* [ ] Step4까지 적용 시, 전체 벤치마크에서 P50/P90 레이턴시 및 처리량 향상.
+* [ ] `mimalloc` 도입 전후 성능 차이를 분리 측정(기본 glibc malloc 대비).
+
+**안전성**
+
+* [ ] 토폴로지 캐싱은 1회만 수행되고 실패 시 단일 노드 모드로 폴백.
+* [ ] 워커 수가 코어 수를 초과해도 실행되나, **경고 로그**로 과구성 알림.
+* [ ] 노드별 작업량 불균형 시 동적 워크 스틸링은 **같은 노드 내**에서만 이루어진다(옵션).
+
+---
+
+## 📝 구현 체크리스트（TODO/DONE）
+
+```rust
+// TODO: topo.load_topology() 1회만 호출되도록 초기화 경로 정리
+// TODO: BaseCell/Face 파티셔닝 구현 + node_id 매핑 규칙 확정
+// TODO: ThreadPoolBuilder.spawn_handler에서 (a) core pin → (b) NodeLocal first-touch 초기화
+// TODO: NODE_LOCAL(thread_local)에서 LUT/버퍼 등 노드 로컬 구조 보관
+// TODO: 병목 함수(grid_disks_fast/compact/polygon_to_cells 등)에 with_node_local 적용
+// TODO: Step2 대비 Step3/4 별도 벤치 라벨로 기여도 분리 측정
+// TODO (opt): 노드 내 워크-스틸링(균형화) 구현, cross-node 스틸링 금지
+
+// DONE: spawn_handler 사용 플로우 확정
+// DONE: first-touch 보장 방식(allocate+resize/fill) 결정
+```
+
+---
+
+## ⚠️ 주의/권장
+
+* `Vec::with_capacity`만으로는 페이지 매핑이 안 됨 → **반드시 `resize`/`fill`로 write 터치**.
+* 스레드풀을 **노드별 다중 풀**로 쪼개기보다는, **단일 풀 + affinity**로 시작하는 게 안정적.
+* `mimalloc`은 성능이 좋아도 NUMA‑aware는 아님 → 도입 시 반드시 **전/후** 측정.
+* 토폴로지 비대칭(노드별 코어 수 상이) 시, **가중치 기반 분배**로 초반 불균형 방지.
+
+---
+
+## 🧪 벤치 라벨링 예시（criterion）
+
+* `polygon_to_cells/h3o`
+* `polygon_to_cells/h3on-step2` (rayon만)
+* `polygon_to_cells/h3on-step3` (affinity 고정)
+* `polygon_to_cells/h3on-step4` (first‑touch 포함)
+* `polygon_to_cells/h3on-step4-mimalloc`
+
+---
+
 
 ### 🔹 STEP 5. 공용 테이블 및 캐시 파티셔닝
 
@@ -348,8 +569,8 @@ cargo clippy --all-targets --all-features
 | 유형 | 예시 |
 |------|------|
 | `rayon` | `[rayon] grid_disks_fast 병렬 iterator 적용` |
-| `numa` | `[numa] fork_union 기반 NUMA-aware 스레드풀 구현` |
-| `mem` | `[mem] numanji 메모리 할당 적용` |
+| `numa` | `[numa] hwlocality 기반 토폴로지 검색 및 스레드 고정 구현` |
+| `mem` | `[mem] first-touch 정책을 활용한 메모리 지역성 개선` |
 | `bench` | `[bench] h3on 기준 polygon_to_cells 벤치마크 추가` |
 | `infra` | `[infra] NUMA 탐색 및 스레드 affinity 확인 추가` |
 
@@ -366,14 +587,17 @@ cargo clippy --all-targets --all-features
 
 | 항목 | 현 이슈 | 제안 개선 방식 | 적용 단계 |
 |------|---------|----------------|------------|
-| grid_disks_fast | 반복 연산 병목 | par_iter + NUMA 스레드 고정 | STEP 2, 3 |
-| shared cache | cross-node 경합 | NUMA 노드별 복제 | STEP 5 |
-| 벡터 버퍼 | 스레드 간 메모리 경합 | LocalAllocator로 고정 | STEP 4 |
+| grid\_disks\_fast | 반복 연산 병목 | par\_iter + `hwlocality`/`core_affinity` 고정 | STEP 2, 3 |
+| shared cache | cross-node 경합 | NUMA 노드별 복제 (`thread_local!`) | STEP 5 |
+| 벡터 버퍼 | 스레드 간 메모리 경합 | 'first-touch' 정책 활용 (스레드별 초기화) | STEP 3, 4 |
 | 벤치마크 | h3/h3o 비교 어려움 | `h3on` 명시적 네임 + 동일 인터페이스 적용 | STEP 6 |
 
-## 📌 참고 라이브러리 목록
+## 📌 참고 라이브러리 목록 (예시)
 
 | 라이브러리 | 기능 | 적용 단계 |
 |------------|------|------------|
 | `rayon` | 데이터 병렬 iterator | STEP 2 |
-| `
+| `hwlocality` | NUMA 토폴로지(노드/코어) 탐색 (hwloc의 safe wrapper) | STEP 3 |
+| `core_affinity` | 현재 스레드를 특정 코어에 바인딩 | STEP 3 |
+| `criterion` | 성능 벤치마킹 | STEP 6 |
+| `mimalloc` | (선택) 고성능 글로벌 메모리 할당자 | STEP 4 |
