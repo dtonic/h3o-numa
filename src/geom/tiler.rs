@@ -212,8 +212,8 @@ impl Tiler {
             #[cfg(feature = "rayon")]
             {
                 use rayon::prelude::*;
-                // Pre-partition by base cell for better locality.
-                candidates.sort_unstable_by_key(|&(cell, _)| cell.base_cell());
+                // Pre-partition for better locality.
+                candidates.sort_unstable();
                 let len = candidates.len();
                 let (job_min, job_max) = crate::parallel::chunk_bounds(len);
                 if len >= job_min {

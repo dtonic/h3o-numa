@@ -200,7 +200,7 @@ impl CellIndex {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
-    pub const fn base_cell(self) -> BaseCell {
+    pub const fn base_cell(&self) -> BaseCell {
         let value = h3o_bit::get_base_cell(self.0.get());
         // SAFETY: `CellIndex` only contains valid base cell (invariant).
         BaseCell::new_unchecked(value)
@@ -684,14 +684,14 @@ impl CellIndex {
             let len = cells.len();
             let (job_min, _) = crate::parallel::chunk_bounds(len);
             if len >= job_min {
-                cells.par_sort_unstable_by_key(Self::base_cell);
+                cells.par_sort_unstable();
             } else {
-                cells.sort_unstable_by_key(Self::base_cell);
+                cells.sort_unstable();
             }
         }
         #[cfg(not(feature = "rayon"))]
         {
-            cells.sort_unstable_by_key(Self::base_cell);
+            cells.sort_unstable();
         }
 
         cells.dedup();
@@ -749,8 +749,8 @@ impl CellIndex {
         {
             use rayon::prelude::*;
             let mut compacted: Vec<_> = compacted.into_iter().collect();
-            // Pre-partition by base cell for better locality.
-            compacted.sort_unstable_by_key(CellIndex::base_cell);
+            // Pre-partition for better locality.
+            compacted.sort_unstable();
             let len = compacted.len();
             let (job_min, job_max) = crate::parallel::chunk_bounds(len);
             if len >= job_min {
@@ -799,8 +799,8 @@ impl CellIndex {
         {
             use rayon::prelude::*;
             let mut compacted: Vec<_> = compacted.into_iter().collect();
-            // Pre-partition by base cell for better locality.
-            compacted.sort_unstable_by_key(CellIndex::base_cell);
+            // Pre-partition for better locality.
+            compacted.sort_unstable();
             let len = compacted.len();
             let (job_min, job_max) = crate::parallel::chunk_bounds(len);
             if len >= job_min {
@@ -1231,8 +1231,8 @@ impl CellIndex {
         {
             use rayon::prelude::*;
             let mut indexes: Vec<_> = indexes.into_iter().collect();
-            // Pre-partition by base cell for better locality.
-            indexes.sort_unstable_by_key(CellIndex::base_cell);
+            // Pre-partition for better locality.
+            indexes.sort_unstable();
             let len = indexes.len();
             let (job_min, job_max) = crate::parallel::chunk_bounds(len);
             if len >= job_min {
