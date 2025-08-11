@@ -690,24 +690,24 @@ impl CellIndex {
         }
         // Check for duplicates.
         let old_len = cells.len();
-        
+
         // DONE: rayon par_sort_unstable를 사용한 병렬 정렬 적용 - 대용량 데이터 정렬 성능 향상
         #[cfg(feature = "rayon")]
         {
             use rayon::prelude::*;
-            if cells.len() > 1000 {
-                // 대용량 데이터의 경우 병렬 정렬 적용
-                cells.par_sort_unstable();
+            let len = cells.len();
+            let (job_min, _) = crate::parallel::chunk_bounds(len);
+            if len >= job_min {
+                cells.par_sort_unstable_by_key(Self::base_cell);
             } else {
-                // 소용량 데이터의 경우 순차 정렬 유지
-                cells.sort_unstable();
+                cells.sort_unstable_by_key(Self::base_cell);
             }
         }
         #[cfg(not(feature = "rayon"))]
         {
-            cells.sort_unstable();
+            cells.sort_unstable_by_key(Self::base_cell);
         }
-        
+
         cells.dedup();
         if cells.len() < old_len {
             return Err(CompactionError::DuplicateInput);
@@ -762,15 +762,19 @@ impl CellIndex {
         #[cfg(feature = "rayon")]
         {
             use rayon::prelude::*;
-            let compacted: Vec<_> = compacted.into_iter().collect();
-            if compacted.len() > 100 {
-                // 대용량 데이터의 경우 병렬 처리 적용
+            let mut compacted: Vec<_> = compacted.into_iter().collect();
+            // Pre-partition by base cell for better locality.
+            compacted.sort_unstable_by_key(CellIndex::base_cell);
+            let len = compacted.len();
+            let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+            if len >= job_min {
                 compacted
                     .into_par_iter()
+                    .with_min_len(job_min)
+                    .with_max_len(job_max)
                     .map(move |index| index.children_count(resolution))
                     .sum()
             } else {
-                // 소용량 데이터의 경우 순차 처리 유지
                 compacted
                     .into_iter()
                     .map(move |index| index.children_count(resolution))
@@ -808,16 +812,20 @@ impl CellIndex {
         #[cfg(feature = "rayon")]
         {
             use rayon::prelude::*;
-            let compacted: Vec<_> = compacted.into_iter().collect();
-            if compacted.len() > 100 {
-                // 대용량 데이터의 경우 병렬 처리 적용
+            let mut compacted: Vec<_> = compacted.into_iter().collect();
+            // Pre-partition by base cell for better locality.
+            compacted.sort_unstable_by_key(CellIndex::base_cell);
+            let len = compacted.len();
+            let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+            if len >= job_min {
                 let results: Vec<_> = compacted
                     .into_par_iter()
+                    .with_min_len(job_min)
+                    .with_max_len(job_max)
                     .flat_map_iter(move |index| index.children(resolution))
                     .collect();
                 Box::new(results.into_iter())
             } else {
-                // 소용량 데이터의 경우 순차 처리 유지
                 let results: Vec<_> = compacted
                     .into_iter()
                     .flat_map(move |index| index.children(resolution))
@@ -1236,16 +1244,20 @@ impl CellIndex {
         #[cfg(feature = "rayon")]
         {
             use rayon::prelude::*;
-            let indexes: Vec<_> = indexes.into_iter().collect();
-            if indexes.len() > 100 {
-                // 대용량 데이터의 경우 병렬 처리 적용
+            let mut indexes: Vec<_> = indexes.into_iter().collect();
+            // Pre-partition by base cell for better locality.
+            indexes.sort_unstable_by_key(CellIndex::base_cell);
+            let len = indexes.len();
+            let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+            if len >= job_min {
                 let results: Vec<_> = indexes
                     .into_par_iter()
+                    .with_min_len(job_min)
+                    .with_max_len(job_max)
                     .flat_map_iter(move |index| index.grid_disk_fast(k))
                     .collect();
                 Box::new(results.into_iter())
             } else {
-                // 소용량 데이터의 경우 순차 처리 유지
                 let results: Vec<_> = indexes
                     .into_iter()
                     .flat_map(move |index| index.grid_disk_fast(k))

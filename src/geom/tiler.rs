@@ -257,13 +257,20 @@ impl Tiler {
             #[cfg(feature = "rayon")]
             {
                 use rayon::prelude::*;
-                if candidates.len() > 100 {
-                    // 대용량 데이터의 경우 병렬 처리 적용
+                // Pre-partition by base cell for better locality.
+                candidates.sort_unstable_by_key(|&(cell, _)| cell.base_cell());
+                let len = candidates.len();
+                let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+                if len >= job_min {
                     let next_gen_par: Vec<_> = candidates
                         .par_iter()
+                        .with_min_len(job_min)
+                        .with_max_len(job_max)
                         .flat_map_iter(|&(cell, _)| {
                             debug_assert!(
-                                self.geom.relate(&cell_boundary(cell)).is_covers(),
+                                self.geom
+                                    .relate(&cell_boundary(cell))
+                                    .is_covers(),
                                 "cell index {cell} in polygon"
                             );
                             let mut scratchpad_local = [0; 7];
@@ -271,7 +278,8 @@ impl Tiler {
                             scratchpad_local[0..count]
                                 .iter()
                                 .filter_map(|candidate| {
-                                    let index = CellIndex::new_unchecked(*candidate);
+                                    let index =
+                                        CellIndex::new_unchecked(*candidate);
                                     // 클로저 내부에서는 가변 참조를 직접 사용할 수 없으므로
                                     // 로컬 결과를 반환하고 나중에 처리
                                     Some((index, true))
@@ -279,7 +287,7 @@ impl Tiler {
                                 .collect::<Vec<_>>()
                         })
                         .collect();
-                    
+
                     // 수집된 결과를 처리
                     for (index, _) in &next_gen_par {
                         if new_seen.insert(*index) {
@@ -297,14 +305,17 @@ impl Tiler {
                         );
 
                         let count = neighbors(cell, &mut scratchpad);
-                        next_gen.extend(scratchpad[0..count].iter().filter_map(
-                            |candidate| {
-                                // SAFETY: candidate comes from `ring_disk_*`.
-                                let index = CellIndex::new_unchecked(*candidate);
-                                new_seen.insert(index);
-                                seen.insert(index).then_some((index, true))
-                            },
-                        ));
+                        next_gen.extend(
+                            scratchpad[0..count].iter().filter_map(
+                                |candidate| {
+                                    // SAFETY: candidate comes from `ring_disk_*`.
+                                    let index =
+                                        CellIndex::new_unchecked(*candidate);
+                                    new_seen.insert(index);
+                                    seen.insert(index).then_some((index, true))
+                                },
+                            ),
+                        );
                     }
                 }
             }
