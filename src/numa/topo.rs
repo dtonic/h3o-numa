@@ -1,0 +1,181 @@
+//! NUMA topology detection and caching
+//! 
+//! This module provides functionality to detect the system's NUMA topology
+//! and cache it for efficient access during runtime.
+
+use once_cell::sync::OnceCell;
+
+/// NUMA topology information
+/// 
+/// Contains information about the number of NUMA nodes and the cores
+/// associated with each node.
+#[cfg(feature = "numa")]
+#[derive(Debug, Clone)]
+pub struct NumaTopology {
+    /// Total number of NUMA nodes
+    pub nodes: usize,
+    /// Cores per NUMA node (logical core IDs)
+    pub cores_per_node: Vec<Vec<usize>>,
+    /// Total number of cores across all nodes
+    pub total_cores: usize,
+}
+
+#[cfg(feature = "numa")]
+impl NumaTopology {
+    /// Get the NUMA node ID for a given core ID
+    pub fn get_node_for_core(&self, core_id: usize) -> Option<usize> {
+        for (node_id, cores) in self.cores_per_node.iter().enumerate() {
+            if cores.contains(&core_id) {
+                return Some(node_id);
+            }
+        }
+        None
+    }
+    
+    /// Get all core IDs for a specific NUMA node
+    pub fn get_cores_for_node(&self, node_id: usize) -> Option<&[usize]> {
+        self.cores_per_node.get(node_id).map(|v| v.as_slice())
+    }
+    
+    /// Check if the topology is valid (has at least one node and core)
+    pub fn is_valid(&self) -> bool {
+        self.nodes > 0 && self.total_cores > 0
+    }
+}
+
+/// Global topology cache
+static TOPOLOGY_CACHE: OnceCell<NumaTopology> = OnceCell::new();
+
+/// Load NUMA topology from the system
+/// 
+/// This function detects the system's NUMA topology and caches it.
+/// It should be called once at startup.
+#[cfg(feature = "numa")]
+pub fn load_topology() -> NumaTopology {
+    if let Some(cached) = TOPOLOGY_CACHE.get() {
+        return cached.clone();
+    }
+    
+    let topology = detect_topology();
+    
+    // Cache the topology for future use
+    let _ = TOPOLOGY_CACHE.set(topology.clone());
+    
+    topology
+}
+
+/// Get cached topology information
+/// 
+/// Returns the cached topology if available, otherwise loads it.
+#[cfg(feature = "numa")]
+pub fn get_topology() -> &'static NumaTopology {
+    TOPOLOGY_CACHE.get_or_init(detect_topology)
+}
+
+/// Detect NUMA topology from the system
+#[cfg(feature = "numa")]
+fn detect_topology() -> NumaTopology {
+    use hwlocality::Topology;
+    
+    match Topology::new() {
+        Ok(topo) => {
+            use hwlocality::object::types::ObjectType;
+            
+            let nodes = topo
+                .objects_with_type(ObjectType::NUMANode)
+                .count();
+            
+            let mut cores_per_node = vec![Vec::new(); nodes.max(1)];
+            let mut total_cores = 0;
+            
+            // Collect cores for each NUMA node
+            for (nid, node) in topo
+                .objects_with_type(ObjectType::NUMANode)
+                .enumerate()
+            {
+                let cores = node
+                    .io_children()
+                    .flat_map(|c| c.cpuset())
+                    .enumerate()
+                    .filter_map(|(i, _)| Some(i))
+                    .collect::<Vec<_>>();
+                
+                cores_per_node[nid] = cores.clone();
+                total_cores += cores.len();
+            }
+            
+            // If no NUMA nodes found, treat as single node
+            if nodes == 0 {
+                let all_cores = topo
+                    .objects_with_type(ObjectType::PU)
+                    .filter_map(|pu| pu.os_index())
+                    .collect::<Vec<_>>();
+                
+                cores_per_node = vec![all_cores.clone()];
+                total_cores = all_cores.len();
+            }
+            
+            NumaTopology {
+                nodes: nodes.max(1),
+                cores_per_node,
+                total_cores,
+            }
+        }
+        Err(_) => {
+            // Fallback to single node if hwloc fails
+            let cores = (0..num_cpus::get()).collect::<Vec<_>>();
+            NumaTopology {
+                nodes: 1,
+                cores_per_node: vec![cores.clone()],
+                total_cores: cores.len(),
+            }
+        }
+    }
+}
+
+/// Fallback topology detection using system information
+#[cfg(not(feature = "numa"))]
+pub fn load_topology() -> NumaTopology {
+    let cores = (0..num_cpus::get()).collect::<Vec<_>>();
+    NumaTopology {
+        nodes: 1,
+        cores_per_node: vec![cores.clone()],
+        total_cores: cores.len(),
+    }
+}
+
+#[cfg(not(feature = "numa"))]
+pub fn get_topology() -> &'static NumaTopology {
+    static FALLBACK: OnceCell<NumaTopology> = OnceCell::new();
+    FALLBACK.get_or_init(|| {
+        let cores = (0..num_cpus::get()).collect::<Vec<_>>();
+        NumaTopology {
+            nodes: 1,
+            cores_per_node: vec![cores.clone()],
+            total_cores: cores.len(),
+        }
+    })
+}
+
+#[cfg(not(feature = "numa"))]
+#[derive(Debug, Clone)]
+pub struct NumaTopology {
+    pub nodes: usize,
+    pub cores_per_node: Vec<Vec<usize>>,
+    pub total_cores: usize,
+}
+
+#[cfg(not(feature = "numa"))]
+impl NumaTopology {
+    pub fn get_node_for_core(&self, _core_id: usize) -> Option<usize> {
+        Some(0)
+    }
+    
+    pub fn get_cores_for_node(&self, node_id: usize) -> Option<&[usize]> {
+        self.cores_per_node.get(node_id).map(|v| v.as_slice())
+    }
+    
+    pub fn is_valid(&self) -> bool {
+        self.nodes > 0 && self.total_cores > 0
+    }
+}
