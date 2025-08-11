@@ -237,15 +237,15 @@ cargo clippy --all-targets --all-features
 ### 🔧 Pre-STEP3 사전 개선 (반드시 선적용)
 
 ```rust
-// TODO: (STEP2) 고정 임계치 제거 → with_min_len/with_max_len 도입
-//  - job_min = max(1024, total_len / (num_threads * 4))
-//  - job_max = job_min * 4
+// DONE: (STEP2) 고정 임계치 제거 → with_min_len/with_max_len 도입
+//       job_min = max(1024, total_len / (num_threads * 4))
+//       job_max = job_min * 4  // DONE: 동적 청크 크기 적용
 
-// TODO: (STEP2) 입력을 BaseCell/Face 단위로 프리-파티셔닝
-//  - 이후 NUMA 노드 매핑 시 cross-node 접근 감소
+// DONE: (STEP2) 입력을 BaseCell/Face 단위로 프리-파티셔닝
+//       DONE: 병렬 처리 전 base cell 정렬로 locality 향상
 
-// TODO: (STEP2) rayon ThreadPoolBuilder 도입으로 커스텀 풀 주입 구조 완성
-//  - spawn_handler 훅 제공 (향후 affinity/hwloc 연결)
+// DONE: (STEP2) rayon ThreadPoolBuilder 도입으로 커스텀 풀 주입 구조 완성
+//       DONE: spawn_handler 훅 추가 (향후 affinity/hwloc 연결 대비)
 ```
 
 ### 🔹 STEP 3. NUMA-aware 스레드/메모리 (개선안)
