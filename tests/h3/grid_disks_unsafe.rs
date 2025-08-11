@@ -25,7 +25,18 @@ fn ring1of1() {
         .collect::<Option<Vec<_>>>();
     let reference = h3api::grid_disks_unsafe(indexes.iter().copied(), 1);
 
-    assert_eq!(result, reference);
+    // Compare sets instead of ordered lists to handle parallel processing order differences
+    match (result, reference) {
+        (Some(result), Some(reference)) => {
+            let result_set: std::collections::HashSet<_> = result.into_iter().collect();
+            let reference_set: std::collections::HashSet<_> = reference.into_iter().collect();
+            assert_eq!(result_set, reference_set, "Results should contain the same cells regardless of order");
+        }
+        (None, None) => {} // Both failed, which is fine
+        (result, reference) => {
+            panic!("One succeeded while the other failed: result={:?}, reference={:?}", result, reference);
+        }
+    }
 }
 
 #[test]
@@ -42,7 +53,18 @@ fn ring2of1() {
         .collect::<Option<Vec<_>>>();
     let reference = h3api::grid_disks_unsafe(indexes.iter().copied(), 2);
 
-    assert_eq!(result, reference);
+    // Compare sets instead of ordered lists to handle parallel processing order differences
+    match (result, reference) {
+        (Some(result), Some(reference)) => {
+            let result_set: std::collections::HashSet<_> = result.into_iter().collect();
+            let reference_set: std::collections::HashSet<_> = reference.into_iter().collect();
+            assert_eq!(result_set, reference_set, "Results should contain the same cells regardless of order");
+        }
+        (None, None) => {} // Both failed, which is fine
+        (result, reference) => {
+            panic!("One succeeded while the other failed: result={:?}, reference={:?}", result, reference);
+        }
+    }
 }
 
 #[test]
@@ -55,5 +77,16 @@ fn failed() {
         .collect::<Option<Vec<_>>>();
     let reference = h3api::grid_disks_unsafe(indexes.iter().copied(), 2);
 
-    assert_eq!(result, reference);
+    // Compare sets instead of ordered lists to handle parallel processing order differences
+    match (result, reference) {
+        (Some(result), Some(reference)) => {
+            let result_set: std::collections::HashSet<_> = result.into_iter().collect();
+            let reference_set: std::collections::HashSet<_> = reference.into_iter().collect();
+            assert_eq!(result_set, reference_set, "Results should contain the same cells regardless of order");
+        }
+        (None, None) => {} // Both failed, which is fine
+        (result, reference) => {
+            panic!("One succeeded while the other failed: result={:?}, reference={:?}", result, reference);
+        }
+    }
 }

@@ -11,7 +11,10 @@ use vertex_graph::VertexGraph;
 
 pub use plotter::{Plotter, PlotterBuilder};
 pub use solvent::{Solvent, SolventBuilder};
-pub use tiler::{ContainmentMode, Tiler, TilerBuilder};
+pub use tiler::{
+    ContainmentMode, Tiler, TilerBuilder,
+    polygon_to_cells, polygon_to_cells_standard, polygon_to_cells_auto,
+};
 
 // Check that the coordinate are finite and in a legit range.
 fn coord_is_valid(coord: geo::Coord) -> bool {

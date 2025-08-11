@@ -12,17 +12,14 @@ use once_cell::sync::OnceCell;
 #[cfg(feature = "numa")]
 #[derive(Debug, Clone)]
 pub struct NumaTopology {
-    /// Total number of NUMA nodes
-    pub nodes: usize,
     /// Cores per NUMA node (logical core IDs)
     pub cores_per_node: Vec<Vec<usize>>,
-    /// Total number of cores across all nodes
-    pub total_cores: usize,
 }
 
 #[cfg(feature = "numa")]
 impl NumaTopology {
     /// Get the NUMA node ID for a given core ID
+    #[allow(dead_code)]
     pub fn get_node_for_core(&self, core_id: usize) -> Option<usize> {
         for (node_id, cores) in self.cores_per_node.iter().enumerate() {
             if cores.contains(&core_id) {
@@ -33,13 +30,15 @@ impl NumaTopology {
     }
     
     /// Get all core IDs for a specific NUMA node
+    #[allow(dead_code)]
     pub fn get_cores_for_node(&self, node_id: usize) -> Option<&[usize]> {
         self.cores_per_node.get(node_id).map(|v| v.as_slice())
     }
     
     /// Check if the topology is valid (has at least one node and core)
+    #[allow(dead_code)]
     pub fn is_valid(&self) -> bool {
-        self.nodes > 0 && self.total_cores > 0
+        !self.cores_per_node.is_empty() && self.cores_per_node.iter().any(|cores| !cores.is_empty())
     }
 }
 
@@ -68,6 +67,7 @@ pub fn load_topology() -> NumaTopology {
 /// 
 /// Returns the cached topology if available, otherwise loads it.
 #[cfg(feature = "numa")]
+#[allow(dead_code)]
 pub fn get_topology() -> &'static NumaTopology {
     TOPOLOGY_CACHE.get_or_init(detect_topology)
 }
@@ -86,7 +86,6 @@ fn detect_topology() -> NumaTopology {
                 .count();
             
             let mut cores_per_node = vec![Vec::new(); nodes.max(1)];
-            let mut total_cores = 0;
             
             // Collect cores for each NUMA node
             for (nid, node) in topo
@@ -101,7 +100,6 @@ fn detect_topology() -> NumaTopology {
                     .collect::<Vec<_>>();
                 
                 cores_per_node[nid] = cores.clone();
-                total_cores += cores.len();
             }
             
             // If no NUMA nodes found, treat as single node
@@ -112,22 +110,17 @@ fn detect_topology() -> NumaTopology {
                     .collect::<Vec<_>>();
                 
                 cores_per_node = vec![all_cores.clone()];
-                total_cores = all_cores.len();
             }
             
             NumaTopology {
-                nodes: nodes.max(1),
                 cores_per_node,
-                total_cores,
             }
         }
         Err(_) => {
             // Fallback to single node if hwloc fails
             let cores = (0..num_cpus::get()).collect::<Vec<_>>();
             NumaTopology {
-                nodes: 1,
                 cores_per_node: vec![cores.clone()],
-                total_cores: cores.len(),
             }
         }
     }
@@ -150,9 +143,7 @@ pub fn get_topology() -> &'static NumaTopology {
     FALLBACK.get_or_init(|| {
         let cores = (0..num_cpus::get()).collect::<Vec<_>>();
         NumaTopology {
-            nodes: 1,
             cores_per_node: vec![cores.clone()],
-            total_cores: cores.len(),
         }
     })
 }
@@ -160,9 +151,7 @@ pub fn get_topology() -> &'static NumaTopology {
 #[cfg(not(feature = "numa"))]
 #[derive(Debug, Clone)]
 pub struct NumaTopology {
-    pub nodes: usize,
     pub cores_per_node: Vec<Vec<usize>>,
-    pub total_cores: usize,
 }
 
 #[cfg(not(feature = "numa"))]
@@ -176,6 +165,6 @@ impl NumaTopology {
     }
     
     pub fn is_valid(&self) -> bool {
-        self.nodes > 0 && self.total_cores > 0
+        !self.cores_per_node.is_empty() && self.cores_per_node.iter().any(|cores| !cores.is_empty())
     }
 }
