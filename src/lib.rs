@@ -281,6 +281,12 @@ pub use face::{Face, FaceSet};
 pub use index::{
     CellIndex, DirectedEdgeIndex, Edge, IndexMode, Vertex, VertexIndex,
 };
+
+#[cfg(feature = "geo")]
+pub use geom::{
+    polygon_to_cells, polygon_to_cells_standard, polygon_to_cells_auto,
+    ContainmentMode, Tiler, TilerBuilder,
+};
 pub use resolution::Resolution;
 
 use resolution::ExtendedResolution;

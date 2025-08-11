@@ -30,7 +30,7 @@ geo = ["dep:geo"]
 serde = ["dep:serde", "dep:serde_repr"]
 tools = ["polyfit-rs"]
 typed_floats = ["dep:typed_floats"]
-numa = ["hwlocality", "core_affinity"]
+numa = ["hwlocality", "core_affinity", "rayon"]
 
 [dependencies]
 ahash = { version = "0.8", optional = true, default-features = false, features = ["std", "compile-time-rng"] }

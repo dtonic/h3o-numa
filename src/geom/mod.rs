@@ -13,6 +13,11 @@ pub use plotter::{Plotter, PlotterBuilder};
 pub use solvent::{Solvent, SolventBuilder};
 pub use tiler::{AnnotatedCell, ContainmentMode, Tiler, TilerBuilder};
 
+#[cfg(feature = "numa")]
+pub use tiler::polygon_to_cells;
+
+pub use tiler::{polygon_to_cells_standard, polygon_to_cells_auto};
+
 // Required for the From<CellIndex> for MultiPolygon implementation.
 pub(crate) use tiler::cell_boundary;
 
