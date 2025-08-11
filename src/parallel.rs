@@ -14,7 +14,7 @@ pub fn init_thread_pool() {
         let _ = ThreadPoolBuilder::new()
             .spawn_handler(|thread| {
                 std::thread::Builder::new()
-                    .name(thread.name().to_string())
+                    .name(thread.name().unwrap_or("rayon-worker").to_string())
                     .spawn(move || thread.run())
                     .map(|_| ())
             })
