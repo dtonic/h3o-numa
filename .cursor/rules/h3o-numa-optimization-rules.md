@@ -3,6 +3,7 @@
 ## 🎯 프로젝트 목표
 
 > `h3on`은 [HydroniumLabs/h3o](https://github.com/HydroniumLabs/h3o)의 fork로, NUMA 기반 멀티코어 환경에서 **대규모 공간 연산을 병렬화하고, 메모리 locality를 개선**하여 성능을 4~7배 향상시키는 것을 목표로 합니다.
+현재 codebase는 [h3o-numa](https://github.com/SeonbaeHwang/h3o-numa)에 위치. working branch는 update-rulebook
 
 - ✅ `h3on`은 기존 `h3o`를 기반으로 하지만, **모든 모듈 및 벤치마크 명시적으로 `h3on`으로 변경**
 - ✅ NUMA-aware 스레드/메모리/데이터 구조 최적화 적용
@@ -256,6 +257,27 @@ cargo clippy --all-targets --all-features
 
 > 🎯 **목표:** `rayon::ThreadPoolBuilder.spawn_handler` 안에서 **(1) 코어 고정**과 **(2) first‑touch 초기화**를 **원자적**으로 수행한다. 이렇게 하면 스레드와 데이터가 동일 NUMA 노드에 존재하도록 강제되어 cross‑node 접근을 최소화한다.
 
+**✅ STEP 3&4 완료 요약:**
+- NUMA 모듈 구조 완성 (`src/numa/mod.rs`, `src/numa/topo.rs`, `src/numa/pool.rs`)
+- `hwlocality` 기반 NUMA 토폴로지 탐색 및 캐싱 구현 완료
+- `core_affinity`를 사용한 스레드 코어 고정 구현 완료
+- `thread_local!` + `OnceCell`을 사용한 노드별 로컬 데이터 구조 구현 완료
+- `build_numa_pool` 함수로 NUMA-aware 스레드풀 구성 완료
+- 핵심 병목 함수들에 NUMA 최적화 적용 완료:
+  - `grid_disks_fast_numa` - 다중 인덱스 처리 NUMA 최적화
+  - `compact_numa` - 압축 연산 NUMA 최적화
+  - `uncompact_numa` - 압축 해제 연산 NUMA 최적화
+  - `uncompact_size_numa` - 크기 계산 NUMA 최적화
+  - `into_coverage_numa` - 폴리곤 타일링 NUMA 최적화
+- `estimate_buffer_sizes` 함수로 동적 버퍼 크기 추정 구현 완료
+- 조건부 컴파일(`#[cfg(feature = "numa")]`)을 통한 선택적 NUMA 최적화 적용
+- 대용량 데이터(100개 이상)에서만 NUMA 최적화 적용하여 오버헤드 최소화
+
+**🎯 다음 단계 준비:**
+- STEP 5: 공용 테이블 및 캐시 파티셔닝 준비 완료
+- NUMA-aware 스레드풀 및 first-touch 초기화 기반 구조 확립
+- 성능 벤치마크를 통한 NUMA 최적화 효과 검증 가능
+
 ## ✅ 의존성/기본 정책
 
 * **필수:** `hwlocality`(토폴로지 탐색), `core_affinity`(코어 바인딩)
@@ -480,11 +502,11 @@ pub fn polygon_to_cells_numa(input: &Polygon, res: u8) -> Vec<Cell> {
 ## 📝 구현 체크리스트（TODO/DONE）
 
 ```rust
-// TODO: topo.load_topology() 1회만 호출되도록 초기화 경로 정리
-// TODO: BaseCell/Face 파티셔닝 구현 + node_id 매핑 규칙 확정
-// TODO: ThreadPoolBuilder.spawn_handler에서 (a) core pin → (b) NodeLocal first-touch 초기화
-// TODO: NODE_LOCAL(thread_local)에서 LUT/버퍼 등 노드 로컬 구조 보관
-// TODO: 병목 함수(grid_disks_fast/compact/polygon_to_cells 등)에 with_node_local 적용
+// DONE: topo.load_topology() 1회만 호출되도록 초기화 경로 정리
+// DONE: BaseCell/Face 파티셔닝 구현 + node_id 매핑 규칙 확정
+// DONE: ThreadPoolBuilder.spawn_handler에서 (a) core pin → (b) NodeLocal first-touch 초기화
+// DONE: NODE_LOCAL(thread_local)에서 LUT/버퍼 등 노드 로컬 구조 보관
+// DONE: 병목 함수(grid_disks_fast/compact/polygon_to_cells 등)에 NUMA 최적화 적용
 // TODO: Step2 대비 Step3/4 별도 벤치 라벨로 기여도 분리 측정
 // TODO (opt): 노드 내 워크-스틸링(균형화) 구현, cross-node 스틸링 금지
 

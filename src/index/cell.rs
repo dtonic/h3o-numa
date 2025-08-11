@@ -743,6 +743,91 @@ impl CellIndex {
         Ok(())
     }
 
+    /// Compacts a set of cells with NUMA-aware optimizations.
+    ///
+    /// This function provides the same functionality as `compact` but with
+    /// additional NUMA optimizations including thread affinity and first-touch
+    /// memory allocation for better performance on NUMA systems.
+    ///
+    /// # Arguments
+    ///
+    /// * `cells` - Vector of cell indexes to compact
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3on::CellIndex;
+    /// let mut cells = vec![
+    ///     CellIndex::try_from(0x8a1fb46622dffff).unwrap(),
+    ///     CellIndex::try_from(0x8a1fb46622d7fff).unwrap(),
+    /// ];
+    /// let result = CellIndex::compact_numa(&mut cells);
+    /// ```
+    #[cfg(feature = "numa")]
+    pub fn compact_numa(cells: &mut Vec<Self>) -> Result<(), CompactionError> {
+        let Some(first) = cells.first() else {
+            return Ok(()); // Empty input, nothing to do.
+        };
+        let resolution = first.resolution();
+        if cells.iter().any(|cell| cell.resolution() != resolution) {
+            return Err(CompactionError::HeterogeneousResolution);
+        }
+        
+        let old_len = cells.len();
+        let len = cells.len();
+        
+        // Use NUMA-aware thread pool for sorting
+        if len > 1000 {
+            use crate::numa::{init_numa, build_numa_pool, estimate_buffer_sizes};
+            
+            // Estimate buffer sizes for NUMA optimization
+            let buffer_sizes = estimate_buffer_sizes(resolution.into(), len);
+            
+            // Initialize NUMA topology
+            let topo = init_numa();
+            
+            // Use NUMA-aware thread pool for sorting
+            build_numa_pool(&topo, buffer_sizes, || {
+                use rayon::prelude::*;
+                cells.par_sort_unstable();
+            });
+        } else {
+            cells.sort_unstable();
+        }
+        
+        cells.dedup();
+        if cells.len() < old_len {
+            return Err(CompactionError::DuplicateInput);
+        }
+        
+        // Rest of the compaction logic remains the same
+        let mut cursor = Cursor::new(cells);
+        'next_cell: while let Some(&cell) = cursor.peek() {
+            if resolution != Resolution::Zero
+                && bits::get_direction(cell.into(), resolution) == 0
+            {
+                for res in Resolution::range(Resolution::Zero, resolution) {
+                    let parent = cell.parent(res).expect("parent exists");
+                    let count =
+                        usize::try_from(parent.children_count(resolution))
+                            .expect("child overflow");
+                    let expected = compute_last_sibling(cell, res);
+
+                    if cursor.peek_at(count - 1) == Some(&expected) {
+                        cursor.consume(count);
+                        cursor.write(parent);
+                        continue 'next_cell;
+                    }
+                }
+            }
+            cursor.consume(1);
+            cursor.write(cell);
+        }
+
+        cursor.flush();
+        Ok(())
+    }
+
     /// Computes the exact size of the uncompacted set of cells.
     ///
     /// # Example
@@ -783,6 +868,65 @@ impl CellIndex {
         }
         #[cfg(not(feature = "rayon"))]
         {
+            compacted
+                .into_iter()
+                .map(move |index| index.children_count(resolution))
+                .sum()
+        }
+    }
+
+    /// Computes the exact size of the uncompacted set of cells with NUMA-aware optimizations.
+    ///
+    /// This function provides the same functionality as `uncompact_size` but with
+    /// additional NUMA optimizations including thread affinity and first-touch
+    /// memory allocation for better performance on NUMA systems.
+    ///
+    /// # Arguments
+    ///
+    /// * `compacted` - Iterator of compacted cell indexes
+    /// * `resolution` - Target resolution for uncompacted cells
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3on::{CellIndex, Resolution};
+    /// let index = CellIndex::try_from(0x8a1fb46622dcfff).unwrap();
+    /// let size = CellIndex::uncompact_size_numa(std::iter::once(index), Resolution::Eleven);
+    /// ```
+    #[cfg(feature = "numa")]
+    pub fn uncompact_size_numa(
+        compacted: impl IntoIterator<Item = Self>,
+        resolution: Resolution,
+    ) -> u64 {
+        use crate::numa::{init_numa, build_numa_pool, estimate_buffer_sizes};
+        
+        let compacted: Vec<_> = compacted.into_iter().collect();
+        let len = compacted.len();
+        
+        // Use NUMA optimization only for large datasets
+        if len > 100 {
+            // Estimate buffer sizes for NUMA optimization
+            let expected_cells = len * (1 << (resolution as u8 * 2));
+            let buffer_sizes = estimate_buffer_sizes(resolution as u8, expected_cells);
+            
+            // Initialize NUMA topology
+            let topo = init_numa();
+            
+            // Use NUMA-aware thread pool
+            build_numa_pool(&topo, buffer_sizes, || {
+                use rayon::prelude::*;
+                
+                // Pre-partition for better locality
+                let mut sorted_compacted = compacted.clone();
+                sorted_compacted.sort_unstable();
+                
+                sorted_compacted
+                    .into_par_iter()
+                    .map(move |index| index.children_count(resolution))
+                    .sum::<u64>()
+            })
+        } else {
+            // Fallback to sequential processing for small datasets
             compacted
                 .into_iter()
                 .map(move |index| index.children_count(resolution))
@@ -835,6 +979,71 @@ impl CellIndex {
         }
         #[cfg(not(feature = "rayon"))]
         {
+            let results: Vec<_> = compacted
+                .into_iter()
+                .flat_map(move |index| index.children(resolution))
+                .collect();
+            Box::new(results.into_iter())
+        }
+    }
+
+    /// Expands a compressed set of cells into a set of cells of the specified
+    /// resolution with NUMA-aware optimizations.
+    ///
+    /// This function provides the same functionality as `uncompact` but with
+    /// additional NUMA optimizations including thread affinity and first-touch
+    /// memory allocation for better performance on NUMA systems.
+    ///
+    /// # Arguments
+    ///
+    /// * `compacted` - Iterator of compacted cell indexes
+    /// * `resolution` - Target resolution for uncompacted cells
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3on::{CellIndex, Resolution};
+    /// let index = CellIndex::try_from(0x8a1fb46622dffff).unwrap();
+    /// let cells = CellIndex::uncompact_numa(
+    ///     std::iter::once(index), Resolution::Eleven
+    /// ).collect::<Vec<_>>();
+    /// ```
+    #[cfg(feature = "numa")]
+    pub fn uncompact_numa(
+        compacted: impl IntoIterator<Item = Self>,
+        resolution: Resolution,
+    ) -> Box<dyn Iterator<Item = Self>> {
+        use crate::numa::{init_numa, build_numa_pool, estimate_buffer_sizes};
+        
+        let compacted: Vec<_> = compacted.into_iter().collect();
+        let len = compacted.len();
+        
+        // Use NUMA optimization only for large datasets
+        if len > 100 {
+            // Estimate buffer sizes for NUMA optimization
+            let expected_cells = len * (1 << (resolution as u8 * 2));
+            let buffer_sizes = estimate_buffer_sizes(resolution as u8, expected_cells);
+            
+            // Initialize NUMA topology
+            let topo = init_numa();
+            
+            // Use NUMA-aware thread pool
+            let results = build_numa_pool(&topo, buffer_sizes, || {
+                use rayon::prelude::*;
+                
+                // Pre-partition for better locality
+                let mut sorted_compacted = compacted.clone();
+                sorted_compacted.sort_unstable();
+                
+                sorted_compacted
+                    .into_par_iter()
+                    .flat_map_iter(move |index| index.children(resolution))
+                    .collect::<Vec<_>>()
+            });
+            
+            Box::new(results.into_iter())
+        } else {
+            // Fallback to sequential processing for small datasets
             let results: Vec<_> = compacted
                 .into_iter()
                 .flat_map(move |index| index.children(resolution))
@@ -1273,6 +1482,66 @@ impl CellIndex {
                 .collect();
             Box::new(results.into_iter())
         }
+    }
+
+
+
+    /// Returns the grid disk of hexagons at grid distance `k` from the given indexes,
+    /// with NUMA-aware optimizations.
+    ///
+    /// This function provides the same functionality as `grid_disks_fast` but with
+    /// additional NUMA optimizations including thread affinity and first-touch
+    /// memory allocation for better performance on NUMA systems.
+    ///
+    /// # Arguments
+    ///
+    /// * `indexes` - Iterator of cell indexes
+    /// * `k` - Grid distance
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use h3on::CellIndex;
+    /// let indexes = vec![
+    ///     CellIndex::try_from(0x8a1fb46622dffff).unwrap(),
+    ///     CellIndex::try_from(0x8a1fb46622d7fff).unwrap(),
+    /// ];
+    /// let cells = CellIndex::grid_disks_fast_numa(indexes, 2)
+    ///     .collect::<Option<Vec<_>>>()
+    ///     .unwrap_or_default();
+    /// ```
+    #[cfg(feature = "numa")]
+    pub fn grid_disks_fast_numa(
+        indexes: impl IntoIterator<Item = Self>,
+        k: u32,
+    ) -> Box<dyn Iterator<Item = Option<Self>>> {
+        use crate::numa::{init_numa, build_numa_pool, estimate_buffer_sizes};
+        
+        let indexes: Vec<_> = indexes.into_iter().collect();
+        let len = indexes.len();
+        
+        // Estimate buffer sizes for NUMA optimization
+        let expected_cells = len * (k as usize * 3 + 1);
+        let buffer_sizes = estimate_buffer_sizes(15, expected_cells); // Use max resolution for estimation
+        
+        // Initialize NUMA topology
+        let topo = init_numa();
+        
+        // Use NUMA-aware thread pool
+        let results = build_numa_pool(&topo, buffer_sizes, || {
+            use rayon::prelude::*;
+            
+            // Pre-partition for better locality
+            let mut sorted_indexes = indexes.clone();
+            sorted_indexes.sort_unstable();
+            
+            sorted_indexes
+                .into_par_iter()
+                .flat_map_iter(move |index| index.grid_disk_fast(k))
+                .collect::<Vec<_>>()
+        });
+        
+        Box::new(results.into_iter())
     }
 
     /// Returns the "hollow" ring of hexagons at exactly grid distance `k` from

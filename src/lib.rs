@@ -260,6 +260,8 @@ mod face;
 pub mod geom;
 mod grid;
 mod index;
+#[cfg(feature = "numa")]
+mod numa;
 #[cfg(feature = "rayon")]
 mod parallel;
 mod resolution;
