@@ -22,7 +22,4 @@ pub fn init_numa() -> NumaTopology {
     topo::load_topology()
 }
 
-/// Check if NUMA features are available
-pub fn is_numa_available() -> bool {
-    cfg!(feature = "numa")
-}
+

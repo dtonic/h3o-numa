@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main};
 
 mod are_neighbor_cells;
+mod are_neighbor_cells_h3o_vs_h3on;
 mod cell_area;
 mod cell_range;
 mod cell_to_boundary;
@@ -73,6 +74,7 @@ mod utils;
 criterion_group!(
     benches,
     are_neighbor_cells::bench,
+    are_neighbor_cells_h3o_vs_h3on::bench,
     cell_area::bench_km2,
     cell_area::bench_m2,
     cell_area::bench_rads2,

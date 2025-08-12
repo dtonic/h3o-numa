@@ -284,7 +284,7 @@ pub use index::{
 
 #[cfg(feature = "geo")]
 pub use geom::{
-    polygon_to_cells, polygon_to_cells_standard, polygon_to_cells_auto,
+    polygon_to_cells,
     ContainmentMode, Tiler, TilerBuilder,
 };
 pub use resolution::Resolution;
