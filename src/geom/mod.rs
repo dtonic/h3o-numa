@@ -13,7 +13,7 @@ pub use plotter::{Plotter, PlotterBuilder};
 pub use solvent::{Solvent, SolventBuilder};
 pub use tiler::{
     ContainmentMode, Tiler, TilerBuilder,
-    polygon_to_cells, polygon_to_cells_standard, polygon_to_cells_auto,
+    polygon_to_cells,
 };
 
 // Check that the coordinate are finite and in a legit range.

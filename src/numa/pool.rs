@@ -140,14 +140,20 @@ where
         .copied()
         .collect();
     
-    let workers = worker_cores.len().max(1);
+    // Ensure we have at least one core to work with
+    if worker_cores.is_empty() {
+        // Fall back to standard processing if no cores available
+        return work();
+    }
+    
+    let workers = worker_cores.len();
     
     // Create thread pool with custom spawn handler
     let pool = ThreadPoolBuilder::new()
         .num_threads(workers)
         .spawn_handler(|thread| {
             let thread_index = thread.index();
-            let core_id = worker_cores[thread_index % worker_cores.len()];
+            let core_id = worker_cores[thread_index % workers];
             
             // Pin the thread to a specific core
             let _ = core_affinity::set_for_current(core_affinity::CoreId { id: core_id });
