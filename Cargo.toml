@@ -30,6 +30,7 @@ geo = ["dep:geo"]
 serde = ["dep:serde", "dep:serde_repr"]
 tools = ["polyfit-rs"]
 typed_floats = ["dep:typed_floats"]
+rayon = ["dep:rayon"]  # ← 독립적인 feature 추가
 numa = ["hwlocality", "core_affinity", "rayon"]
 
 [dependencies]

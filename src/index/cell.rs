@@ -667,66 +667,76 @@ impl CellIndex {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn compact(cells: &mut Vec<Self>) -> Result<(), CompactionError> {
-        let Some(first) = cells.first() else {
-            return Ok(()); // Empty input, nothing to do.
-        };
-        let resolution = first.resolution();
-        if cells.iter().any(|cell| cell.resolution() != resolution) {
-            return Err(CompactionError::HeterogeneousResolution);
-        }
-        // Check for duplicates.
-        let old_len = cells.len();
-
-        // DONE: rayon par_sort_unstable를 사용한 병렬 정렬 적용 - 대용량 데이터 정렬 성능 향상
-        #[cfg(feature = "rayon")]
+        #[cfg(feature = "numa")]
         {
-            use rayon::prelude::*;
-            let len = cells.len();
-            let (job_min, _) = crate::parallel::chunk_bounds(len);
-            if len >= job_min {
-                cells.par_sort_unstable();
-            } else {
-                cells.sort_unstable();
+            // Use NUMA optimization when available
+            Self::compact_numa(cells)
+        }
+        
+        #[cfg(not(feature = "numa"))]
+        {
+            // Fall back to standard implementation
+            let Some(first) = cells.first() else {
+                return Ok(()); // Empty input, nothing to do.
+            };
+            let resolution = first.resolution();
+            if cells.iter().any(|cell| cell.resolution() != resolution) {
+                return Err(CompactionError::HeterogeneousResolution);
             }
-        }
-        #[cfg(not(feature = "rayon"))]
-        {
-            cells.sort_unstable();
-        }
+            // Check for duplicates.
+            let old_len = cells.len();
 
-        cells.dedup();
-        if cells.len() < old_len {
-            return Err(CompactionError::DuplicateInput);
-        }
-
-        let mut cursor = Cursor::new(cells);
-        'next_cell: while let Some(&cell) = cursor.peek() {
-            // Resolution zero cell cannot be compacted.
-            // First cell may be compacted with the next ones.
-            if resolution != Resolution::Zero
-                && bits::get_direction(cell.into(), resolution) == 0
+            // DONE: rayon par_sort_unstable를 사용한 병렬 정렬 적용 - 대용량 데이터 정렬 성능 향상
+            #[cfg(feature = "rayon")]
             {
-                for res in Resolution::range(Resolution::Zero, resolution) {
-                    let parent = cell.parent(res).expect("parent exists");
-                    let count =
-                        usize::try_from(parent.children_count(resolution))
-                            .expect("child overflow");
-                    let expected = compute_last_sibling(cell, res);
-
-                    if cursor.peek_at(count - 1) == Some(&expected) {
-                        cursor.consume(count);
-                        cursor.write(parent);
-                        continue 'next_cell;
-                    }
+                use rayon::prelude::*;
+                let len = cells.len();
+                let (job_min, _) = crate::parallel::chunk_bounds(len);
+                if len >= job_min {
+                    cells.par_sort_unstable();
+                } else {
+                    cells.sort_unstable();
                 }
             }
-            // Cannot compact, keep as-is.
-            cursor.consume(1);
-            cursor.write(cell);
-        }
+            #[cfg(not(feature = "rayon"))]
+            {
+                cells.sort_unstable();
+            }
 
-        cursor.flush();
-        Ok(())
+            cells.dedup();
+            if cells.len() < old_len {
+                return Err(CompactionError::DuplicateInput);
+            }
+
+            let mut cursor = Cursor::new(cells);
+            'next_cell: while let Some(&cell) = cursor.peek() {
+                // Resolution zero cell cannot be compacted.
+                // First cell may be compacted with the next ones.
+                if resolution != Resolution::Zero
+                    && bits::get_direction(cell.into(), resolution) == 0
+                {
+                    for res in Resolution::range(Resolution::Zero, resolution) {
+                        let parent = cell.parent(res).expect("parent_exists");
+                        let count =
+                            usize::try_from(parent.children_count(resolution))
+                                .expect("child overflow");
+                        let expected = compute_last_sibling(cell, res);
+
+                        if cursor.peek_at(count - 1) == Some(&expected) {
+                            cursor.consume(count);
+                            cursor.write(parent);
+                            continue 'next_cell;
+                        }
+                    }
+                }
+                // Cannot compact, keep as-is.
+                cursor.consume(1);
+                cursor.write(cell);
+            }
+
+            cursor.flush();
+            Ok(())
+        }
     }
 
     /// Compacts a set of cells with NUMA-aware optimizations.
@@ -768,15 +778,20 @@ impl CellIndex {
             
             // Estimate buffer sizes for NUMA optimization
             let buffer_sizes = estimate_buffer_sizes(resolution.into(), len);
-            
+                
             // Initialize NUMA topology
             let topo = init_numa();
             
-            // Use NUMA-aware thread pool for sorting
-            build_numa_pool(&topo, buffer_sizes, || {
-                use rayon::prelude::*;
-                cells.par_sort_unstable();
-            });
+                            // Use NUMA-aware thread pool for sorting with chunk bounds
+                build_numa_pool(&topo, buffer_sizes, || {
+                    use rayon::prelude::*;
+                    let (job_min, _) = crate::parallel::chunk_bounds(len);
+                    if len >= job_min {
+                        cells.par_sort_unstable();
+                    } else {
+                        cells.sort_unstable();
+                    }
+                });
         } else {
             cells.sort_unstable();
         }
@@ -829,35 +844,45 @@ impl CellIndex {
         compacted: impl IntoIterator<Item = Self>,
         resolution: Resolution,
     ) -> u64 {
-        // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 크기 계산 성능 향상
-        #[cfg(feature = "rayon")]
+        #[cfg(feature = "numa")]
         {
-            use rayon::prelude::*;
-            let mut compacted: Vec<_> = compacted.into_iter().collect();
-            // Pre-partition for better locality.
-            compacted.sort_unstable();
-            let len = compacted.len();
-            let (job_min, job_max) = crate::parallel::chunk_bounds(len);
-            if len >= job_min {
-                compacted
-                    .into_par_iter()
-                    .with_min_len(job_min)
-                    .with_max_len(job_max)
-                    .map(move |index| index.children_count(resolution))
-                    .sum()
-            } else {
+            // Use NUMA optimization when available
+            Self::uncompact_size_numa(compacted, resolution)
+        }
+        
+        #[cfg(not(feature = "numa"))]
+        {
+            // Fall back to standard implementation
+            // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 크기 계산 성능 향상
+            #[cfg(feature = "rayon")]
+            {
+                use rayon::prelude::*;
+                let mut compacted: Vec<_> = compacted.into_iter().collect();
+                // Pre-partition for better locality.
+                compacted.sort_unstable();
+                let len = compacted.len();
+                let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+                if len >= job_min {
+                    compacted
+                        .into_par_iter()
+                        .with_min_len(job_min)
+                        .with_max_len(job_max)
+                        .map(move |index| index.children_count(resolution))
+                        .sum()
+                } else {
+                    compacted
+                        .into_iter()
+                        .map(move |index| index.children_count(resolution))
+                        .sum()
+                }
+            }
+            #[cfg(not(feature = "rayon"))]
+            {
                 compacted
                     .into_iter()
                     .map(move |index| index.children_count(resolution))
                     .sum()
             }
-        }
-        #[cfg(not(feature = "rayon"))]
-        {
-            compacted
-                .into_iter()
-                .map(move |index| index.children_count(resolution))
-                .sum()
         }
     }
 
@@ -898,7 +923,7 @@ impl CellIndex {
             // Initialize NUMA topology
             let topo = init_numa();
             
-            // Use NUMA-aware thread pool
+            // Use NUMA-aware thread pool with chunk bounds
             build_numa_pool(&topo, buffer_sizes, || {
                 use rayon::prelude::*;
                 
@@ -906,10 +931,20 @@ impl CellIndex {
                 let mut sorted_compacted = compacted.clone();
                 sorted_compacted.sort_unstable();
                 
-                sorted_compacted
-                    .into_par_iter()
-                    .map(move |index| index.children_count(resolution))
-                    .sum::<u64>()
+                let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+                if len >= job_min {
+                    sorted_compacted
+                        .into_par_iter()
+                        .with_min_len(job_min)
+                        .with_max_len(job_max)
+                        .map(move |index| index.children_count(resolution))
+                        .sum::<u64>()
+                } else {
+                    sorted_compacted
+                        .into_iter()
+                        .map(move |index| index.children_count(resolution))
+                        .sum()
+                }
             })
         } else {
             // Fallback to sequential processing for small datasets
@@ -938,38 +973,48 @@ impl CellIndex {
         compacted: impl IntoIterator<Item = Self>,
         resolution: Resolution,
     ) -> Box<dyn Iterator<Item = Self>> {
-        // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 압축 해제 연산 성능 향상
-        #[cfg(feature = "rayon")]
+        #[cfg(feature = "numa")]
         {
-            use rayon::prelude::*;
-            let mut compacted: Vec<_> = compacted.into_iter().collect();
-            // Pre-partition for better locality.
-            compacted.sort_unstable();
-            let len = compacted.len();
-            let (job_min, job_max) = crate::parallel::chunk_bounds(len);
-            if len >= job_min {
-                let results: Vec<_> = compacted
-                    .into_par_iter()
-                    .with_min_len(job_min)
-                    .with_max_len(job_max)
-                    .flat_map_iter(move |index| index.children(resolution))
-                    .collect();
-                Box::new(results.into_iter())
-            } else {
+            // Use NUMA optimization when available
+            Self::uncompact_numa(compacted, resolution)
+        }
+        
+        #[cfg(not(feature = "numa"))]
+        {
+            // Fall back to standard implementation
+            // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 압축 해제 연산 성능 향상
+            #[cfg(feature = "rayon")]
+            {
+                use rayon::prelude::*;
+                let mut compacted: Vec<_> = compacted.into_iter().collect();
+                // Pre-partition for better locality.
+                compacted.sort_unstable();
+                let len = compacted.len();
+                let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+                if len >= job_min {
+                    let results: Vec<_> = compacted
+                        .into_par_iter()
+                        .with_min_len(job_min)
+                        .with_max_len(job_max)
+                        .flat_map_iter(move |index| index.children(resolution))
+                        .collect();
+                    Box::new(results.into_iter())
+                } else {
+                    let results: Vec<_> = compacted
+                        .into_iter()
+                        .flat_map(move |index| index.children(resolution))
+                        .collect();
+                    Box::new(results.into_iter())
+                }
+            }
+            #[cfg(not(feature = "rayon"))]
+            {
                 let results: Vec<_> = compacted
                     .into_iter()
                     .flat_map(move |index| index.children(resolution))
                     .collect();
                 Box::new(results.into_iter())
             }
-        }
-        #[cfg(not(feature = "rayon"))]
-        {
-            let results: Vec<_> = compacted
-                .into_iter()
-                .flat_map(move |index| index.children(resolution))
-                .collect();
-            Box::new(results.into_iter())
         }
     }
 
@@ -1013,7 +1058,7 @@ impl CellIndex {
             // Initialize NUMA topology
             let topo = init_numa();
             
-            // Use NUMA-aware thread pool
+            // Use NUMA-aware thread pool with chunk bounds
             let results = build_numa_pool(&topo, buffer_sizes, || {
                 use rayon::prelude::*;
                 
@@ -1021,10 +1066,20 @@ impl CellIndex {
                 let mut sorted_compacted = compacted.clone();
                 sorted_compacted.sort_unstable();
                 
-                sorted_compacted
-                    .into_par_iter()
-                    .flat_map_iter(move |index| index.children(resolution))
-                    .collect::<Vec<_>>()
+                let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+                if len >= job_min {
+                    sorted_compacted
+                        .into_par_iter()
+                        .with_min_len(job_min)
+                        .with_max_len(job_max)
+                        .flat_map_iter(move |index| index.children(resolution))
+                        .collect::<Vec<_>>()
+                } else {
+                    sorted_compacted
+                        .into_iter()
+                        .flat_map(move |index| index.children(resolution))
+                        .collect::<Vec<_>>()
+                }
             });
             
             Box::new(results.into_iter())
@@ -1435,38 +1490,47 @@ impl CellIndex {
         indexes: impl IntoIterator<Item = Self>,
         k: u32,
     ) -> Box<dyn Iterator<Item = Option<Self>>> {
-        // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 다중 인덱스 처리 성능 향상
-        #[cfg(feature = "rayon")]
+        #[cfg(feature = "numa")]
         {
-            use rayon::prelude::*;
-            let mut indexes: Vec<_> = indexes.into_iter().collect();
-            // Pre-partition for better locality.
-            indexes.sort_unstable();
-            let len = indexes.len();
-            let (job_min, job_max) = crate::parallel::chunk_bounds(len);
-            if len >= job_min {
-                let results: Vec<_> = indexes
-                    .into_par_iter()
-                    .with_min_len(job_min)
-                    .with_max_len(job_max)
-                    .flat_map_iter(move |index| index.grid_disk_fast(k))
-                    .collect();
-                Box::new(results.into_iter())
-            } else {
+            // Use NUMA optimization when available
+            Self::grid_disks_fast_numa(indexes, k)
+        }
+        
+        #[cfg(not(feature = "numa"))]
+        {
+            // Fall back to rayon parallel processing or sequential processing
+            #[cfg(feature = "rayon")]
+            {
+                use rayon::prelude::*;
+                let mut indexes: Vec<_> = indexes.into_iter().collect();
+                // Pre-partition for better locality.
+                indexes.sort_unstable();
+                let len = indexes.len();
+                let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+                if len >= job_min {
+                    let results: Vec<_> = indexes
+                        .into_par_iter()
+                        .with_min_len(job_min)
+                        .with_max_len(job_max)
+                        .flat_map_iter(move |index| index.grid_disk_fast(k))
+                        .collect();
+                    Box::new(results.into_iter())
+                } else {
+                    let results: Vec<_> = indexes
+                        .into_iter()
+                        .flat_map(move |index| index.grid_disk_fast(k))
+                        .collect();
+                    Box::new(results.into_iter())
+                }
+            }
+            #[cfg(not(feature = "rayon"))]
+            {
                 let results: Vec<_> = indexes
                     .into_iter()
                     .flat_map(move |index| index.grid_disk_fast(k))
                     .collect();
                 Box::new(results.into_iter())
             }
-        }
-        #[cfg(not(feature = "rayon"))]
-        {
-            let results: Vec<_> = indexes
-                .into_iter()
-                .flat_map(move |index| index.grid_disk_fast(k))
-                .collect();
-            Box::new(results.into_iter())
         }
     }
 
@@ -1513,7 +1577,7 @@ impl CellIndex {
         // Initialize NUMA topology
         let topo = init_numa();
         
-        // Use NUMA-aware thread pool
+        // Use NUMA-aware thread pool with chunk bounds
         let results = build_numa_pool(&topo, buffer_sizes, || {
             use rayon::prelude::*;
             
@@ -1521,10 +1585,20 @@ impl CellIndex {
             let mut sorted_indexes = indexes.clone();
             sorted_indexes.sort_unstable();
             
-            sorted_indexes
-                .into_par_iter()
-                .flat_map_iter(move |index| index.grid_disk_fast(k))
-                .collect::<Vec<_>>()
+            let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+            if len >= job_min {
+                sorted_indexes
+                    .into_par_iter()
+                    .with_min_len(job_min)
+                    .with_max_len(job_max)
+                    .flat_map_iter(move |index| index.grid_disk_fast(k))
+                    .collect::<Vec<_>>()
+            } else {
+                sorted_indexes
+                    .into_iter()
+                    .flat_map(move |index| index.grid_disk_fast(k))
+                    .collect::<Vec<_>>()
+            }
         });
         
         Box::new(results.into_iter())
