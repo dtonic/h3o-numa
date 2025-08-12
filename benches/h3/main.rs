@@ -53,6 +53,7 @@ mod latlng_to_cell;
 mod local_ij_to_cell;
 mod max_face_count;
 mod max_grid_disk_size;
+mod numa_parallel_bench;
 mod origin_to_directed_edges;
 mod pentagon_count;
 mod rads_to_degs;
@@ -135,6 +136,7 @@ criterion_group!(
     local_ij_to_cell::bench,
     max_face_count::bench,
     max_grid_disk_size::bench,
+    numa_parallel_bench::bench,
     origin_to_directed_edges::bench,
     pentagon_count::bench,
     rads_to_degs::bench,
