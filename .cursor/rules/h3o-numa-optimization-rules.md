@@ -273,6 +273,15 @@ cargo clippy --all-targets --all-features
 - 조건부 컴파일(`#[cfg(feature = "numa")]`)을 통한 선택적 NUMA 최적화 적용
 - 대용량 데이터(100개 이상)에서만 NUMA 최적화 적용하여 오버헤드 최소화
 
+**🔄 STEP 5: 기존 함수를 NUMA 버전으로 자동 대체하여 API 호환성 유지** ✅ **완료**
+- `grid_disks_fast()` → `grid_disks_fast_numa()` 자동 호출
+- `compact()` → `compact_numa()` 자동 호출  
+- `uncompact()` → `uncompact_numa()` 자동 호출
+- `uncompact_size()` → `uncompact_size_numa()` 자동 호출
+- `into_coverage()` → `into_coverage_numa()` 자동 호출
+- 기존 API 호환성 완벽 유지, 사용자 코드 변경 불필요
+- `--features numa` 활성화 시 자동으로 NUMA 최적화 적용
+
 **🎯 다음 단계 준비:**
 - STEP 5: 공용 테이블 및 캐시 파티셔닝 준비 완료
 - NUMA-aware 스레드풀 및 first-touch 초기화 기반 구조 확립

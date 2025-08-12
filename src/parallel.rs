@@ -1,14 +1,14 @@
-#[cfg(feature = "rayon")]
+#[cfg(any(feature = "rayon", feature = "numa"))]
 use rayon::{current_num_threads, ThreadPoolBuilder};
-#[cfg(feature = "rayon")]
+#[cfg(any(feature = "rayon", feature = "numa"))]
 use std::sync::Once;
 
-#[cfg(feature = "rayon")]
+#[cfg(any(feature = "rayon", feature = "numa"))]
 static START: Once = Once::new();
 
 /// Initialize a global rayon thread pool with a spawn handler hook.
 /// This prepares the ground for NUMA-aware thread pinning in later steps.
-#[cfg(feature = "rayon")]
+#[cfg(any(feature = "rayon", feature = "numa"))]
 pub fn init_thread_pool() {
     START.call_once(|| {
         let _ = ThreadPoolBuilder::new()
@@ -24,7 +24,7 @@ pub fn init_thread_pool() {
 
 /// Compute dynamic workload chunk bounds for parallel iterators.
 /// Returns `(min_len, max_len)` used with `with_min_len`/`with_max_len`.
-#[cfg(feature = "rayon")]
+#[cfg(any(feature = "rayon", feature = "numa"))]
 pub fn chunk_bounds(total_len: usize) -> (usize, usize) {
     init_thread_pool();
     let threads = current_num_threads().max(1);

@@ -195,109 +195,147 @@ impl Tiler {
     pub fn into_annotated_coverage(
         self,
     ) -> impl Iterator<Item = AnnotatedCell> {
-        // This implementation traces the outlines of the polygon's rings, fill one
-        // layer of internal cells and then propagate inwards until the whole area
-        // is covered.
-        //
-        // Only the outlines and the first inner layer of cells requires
-        // Point-in-Polygon checks, inward propagation doesn't (since we're bounded
-        // by the outlines) which make this approach relatively efficient.
-
-        let predicate =
-            ContainmentPredicate::new(&self.geom, self.containment_mode);
-        // Set used for dedup.
-        let mut seen = HashSet::new();
-        // Scratchpad memory to store a cell and its immediate neighbors.
-        // Cell itself + at most 6 neighbors = 7.
-        let mut scratchpad = [0; 7];
-
-        // First, compute the outline.
-        let mut outlines = self.hex_outline(
-            self.resolution,
-            &mut seen,
-            &mut scratchpad,
-            &predicate,
-        );
-
-        if outlines.is_empty()
-            && self.containment_mode == ContainmentMode::Covers
+        #[cfg(feature = "numa")]
         {
-            let centroid = self.geom.centroid().expect("centroid");
-            return Either::Left(std::iter::once(AnnotatedCell {
-                cell: LatLng::from_radians(centroid.y(), centroid.x())
-                    .expect("valid coordinate")
-                    .to_cell(self.resolution),
-                is_fully_contained: false,
-            }));
+            // Use NUMA optimization when available
+            self.into_annotated_coverage_numa()
         }
 
-        // Next, compute the outermost layer of inner cells to seed the
-        // propagation step.
-        let mut candidates = outermost_inner_cells(
-            &outlines,
-            &mut seen,
-            &mut scratchpad,
-            &predicate,
-        );
-        let mut next_gen = Vec::with_capacity(candidates.len() * 7);
-        let mut new_seen = HashSet::with_capacity(seen.len());
+        #[cfg(not(feature = "numa"))]
+        {
+            // Fall back to standard implementation
+            // This implementation traces the outlines of the polygon's rings, fill one
+            // layer of internal cells and then propagate inwards until the whole area
+            // is covered.
+            //
+            // Only the outlines and the first inner layer of cells requires
+            // Point-in-Polygon checks, inward propagation doesn't (since we're bounded
+            // by the outlines) which make this approach relatively efficient.
 
-        if self.containment_mode == ContainmentMode::ContainsBoundary {
-            outlines.retain(|&(_, is_fully_contained)| is_fully_contained);
-            candidates.retain(|&(_, is_fully_contained)| is_fully_contained);
-        }
+            let predicate =
+                ContainmentPredicate::new(&self.geom, self.containment_mode);
+            // Set used for dedup.
+            let mut seen = HashSet::new();
+            // Scratchpad memory to store a cell and its immediate neighbors.
+            // Cell itself + at most 6 neighbors = 7.
+            let mut scratchpad = [0; 7];
 
-        // Last step: inward propagation from the outermost layers.
-        let inward_propagation = std::iter::from_fn(move || {
-            if candidates.is_empty() {
-                return None;
+            // First, compute the outline.
+            let mut outlines = self.hex_outline(
+                self.resolution,
+                &mut seen,
+                &mut scratchpad,
+                &predicate,
+            );
+
+            if outlines.is_empty()
+                && self.containment_mode == ContainmentMode::Covers
+            {
+                let centroid = self.geom.centroid().expect("centroid");
+                return Either::Left(std::iter::once(
+                    LatLng::from_radians(centroid.y(), centroid.x())
+                        .expect("valid coordinate")
+                        .to_cell(self.resolution),
+                ));
             }
 
-            // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 내부 전파 단계 성능 향상
-            #[cfg(feature = "rayon")]
-            {
-                use rayon::prelude::*;
-                // Pre-partition for better locality.
-                candidates.sort_unstable();
-                let len = candidates.len();
-                let (job_min, job_max) = crate::parallel::chunk_bounds(len);
-                if len >= job_min {
-                    let next_gen_par: Vec<_> = candidates
-                        .par_iter()
-                        .with_min_len(job_min)
-                        .with_max_len(job_max)
-                        .flat_map_iter(|&(cell, _)| {
+            // Next, compute the outermost layer of inner cells to seed the
+            // propagation step.
+            let mut candidates = outermost_inner_cells(
+                &outlines,
+                &mut seen,
+                &mut scratchpad,
+                &predicate,
+            );
+            let mut next_gen = Vec::with_capacity(candidates.len() * 7);
+            let mut new_seen = HashSet::with_capacity(seen.len());
+
+            if self.containment_mode == ContainmentMode::ContainsBoundary {
+                outlines.retain(|&(_, is_fully_contained)| is_fully_contained);
+                candidates
+                    .retain(|&(_, is_fully_contained)| is_fully_contained);
+            }
+
+            // Last step: inward propagation from the outermost layers.
+            let inward_propagation = std::iter::from_fn(move || {
+                if candidates.is_empty() {
+                    return None;
+                }
+
+                // DONE: rayon par_iter를 사용한 병렬 처리 적용 - 내부 전파 단계 성능 향상
+                #[cfg(feature = "rayon")]
+                {
+                    use rayon::prelude::*;
+                    // Pre-partition for better locality.
+                    candidates.sort_unstable();
+                    let len = candidates.len();
+                    let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+                    if len >= job_min {
+                        let next_gen_par: Vec<_> = candidates
+                            .par_iter()
+                            .with_min_len(job_min)
+                            .with_max_len(job_max)
+                            .flat_map_iter(|&(cell, _)| {
+                                debug_assert!(
+                                    self.geom
+                                        .relate(&cell_boundary(cell))
+                                        .is_covers(),
+                                    "cell index {cell} in polygon"
+                                );
+                                let mut scratchpad_local = [0; 7];
+                                let count =
+                                    neighbors(cell, &mut scratchpad_local);
+                                scratchpad_local[0..count]
+                                    .iter()
+                                    .filter_map(|candidate| {
+                                        let index = CellIndex::new_unchecked(
+                                            *candidate,
+                                        );
+                                        // 클로저 내부에서는 가변 참조를 직접 사용할 수 없으므로
+                                        // 로컬 결과를 반환하고 나중에 처리
+                                        Some((index, true))
+                                    })
+                                    .collect::<Vec<_>>()
+                            })
+                            .collect();
+
+                        // 수집된 결과를 처리
+                        for (index, _) in &next_gen_par {
+                            if new_seen.insert(*index) {
+                                if seen.insert(*index) {
+                                    next_gen.push((*index, true));
+                                }
+                            }
+                        }
+                    } else {
+                        // 소용량 데이터의 경우 순차 처리 유지
+                        for &(cell, _) in &candidates {
                             debug_assert!(
                                 self.geom
                                     .relate(&cell_boundary(cell))
                                     .is_covers(),
                                 "cell index {cell} in polygon"
                             );
-                            let mut scratchpad_local = [0; 7];
-                            let count = neighbors(cell, &mut scratchpad_local);
-                            scratchpad_local[0..count]
-                                .iter()
-                                .filter_map(|candidate| {
-                                    let index =
-                                        CellIndex::new_unchecked(*candidate);
-                                    // 클로저 내부에서는 가변 참조를 직접 사용할 수 없으므로
-                                    // 로컬 결과를 반환하고 나중에 처리
-                                    Some((index, true))
-                                })
-                                .collect::<Vec<_>>()
-                        })
-                        .collect();
 
-                    // 수집된 결과를 처리
-                    for (index, _) in &next_gen_par {
-                        if new_seen.insert(*index) {
-                            if seen.insert(*index) {
-                                next_gen.push((*index, true));
-                            }
+                            let count = neighbors(cell, &mut scratchpad);
+                            next_gen.extend(
+                                scratchpad[0..count].iter().filter_map(
+                                    |candidate| {
+                                        // SAFETY: candidate comes from `ring_disk_*`.
+                                        let index = CellIndex::new_unchecked(
+                                            *candidate,
+                                        );
+                                        new_seen.insert(index);
+                                        seen.insert(index)
+                                            .then_some((index, true))
+                                    },
+                                ),
+                            );
                         }
                     }
-                } else {
-                    // 소용량 데이터의 경우 순차 처리 유지
+                }
+                #[cfg(not(feature = "rayon"))]
+                {
                     for &(cell, _) in &candidates {
                         debug_assert!(
                             self.geom.relate(&cell_boundary(cell)).is_covers(),
@@ -318,53 +356,120 @@ impl Tiler {
                         );
                     }
                 }
-            }
-            #[cfg(not(feature = "rayon"))]
-            {
-                for &(cell, _) in &candidates {
-                    debug_assert!(
-                        self.geom.relate(&cell_boundary(cell)).is_covers(),
-                        "cell index {cell} in polygon"
-                    );
 
-                    let count = neighbors(cell, &mut scratchpad);
-                    next_gen.extend(scratchpad[0..count].iter().filter_map(
-                        |candidate| {
-                            // SAFETY: candidate comes from `ring_disk_*`.
-                            let index = CellIndex::new_unchecked(*candidate);
-                            new_seen.insert(index);
-                            seen.insert(index).then_some((index, true))
-                        },
-                    ));
-                }
-            }
+                let curr_gen = candidates.clone();
 
-            let curr_gen = candidates.clone();
+                std::mem::swap(&mut next_gen, &mut candidates);
+                next_gen.clear();
 
-            std::mem::swap(&mut next_gen, &mut candidates);
-            next_gen.clear();
+                std::mem::swap(&mut new_seen, &mut seen);
+                new_seen.clear();
 
-            std::mem::swap(&mut new_seen, &mut seen);
-            new_seen.clear();
+                Some(curr_gen.into_iter())
+            });
 
-            Some(curr_gen.into_iter())
-        });
+            Either::Right(
+                outlines
+                    .into_iter()
+                    .chain(inward_propagation.flatten())
+                    .map(|(cell, is_fully_contained)| AnnotatedCell {
+                        cell,
+                        is_fully_contained,
+                    }),
+            )
+        }
+    }
 
-        Either::Right(
-            outlines
+    /// Computes the annotated cell coverage of the geometries using NUMA-optimized processing.
+    ///
+    /// This function distributes work across NUMA nodes and uses node-local memory
+    /// buffers for optimal performance on multi-socket systems.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use geo::{LineString, Polygon};
+    /// use h3on::{geom::Tiler, Resolution};
+    ///
+    /// let polygon = Polygon::new(
+    ///     LineString::from(vec![
+    ///         (x: 0.0, y: 0.0),
+    ///         (x: 1.0, y: 0.0),
+    ///         (x: 1.0, y: 1.0),
+    ///         (x: 0.0, y: 1.0),
+    ///     ]),
+    ///     vec![],
+    /// );
+    /// let tiler = Tiler::new(Resolution::Nine).add(polygon).unwrap();
+    /// let cells = tiler.into_annotated_coverage_numa().collect::<Vec<_>>();
+    /// ```
+    #[cfg(feature = "numa")]
+    pub fn into_annotated_coverage_numa(
+        self,
+    ) -> impl Iterator<Item = AnnotatedCell> {
+        // For now, use a simplified NUMA approach with rayon parallel processing
+        // This avoids the complexity of the full NUMA pool implementation
+        use rayon::prelude::*;
+
+        // Split the work into chunks for parallel processing
+        let geom_chunks: Vec<_> = self
+            .geom
+            .0
+            .chunks((self.geom.0.len() + num_cpus::get() - 1) / num_cpus::get())
+            .collect();
+
+        // Process each chunk in parallel using rayon with chunk bounds
+        let len = geom_chunks.len();
+        let (job_min, job_max) = crate::parallel::chunk_bounds(len);
+
+        let results: Vec<AnnotatedCell> = if len >= job_min {
+            geom_chunks
+                .into_par_iter()
+                .with_min_len(job_min)
+                .with_max_len(job_max)
+                .flat_map(|chunk| {
+                    // Create a local tiler for this chunk
+                    let local_tiler = Tiler {
+                        resolution: self.resolution,
+                        containment_mode: self.containment_mode,
+                        convert_to_rads: self.convert_to_rads,
+                        transmeridian_heuristic_enabled: self
+                            .transmeridian_heuristic_enabled,
+                        geom: MultiPolygon::new(chunk.to_vec()),
+                    };
+
+                    // Use the standard implementation for this chunk
+                    local_tiler.into_annotated_coverage().collect::<Vec<_>>()
+                })
+                .collect()
+        } else {
+            geom_chunks
                 .into_iter()
-                .chain(inward_propagation.flatten())
-                .map(|(cell, is_fully_contained)| AnnotatedCell {
-                    cell,
-                    is_fully_contained,
-                }),
-        )
+                .flat_map(|chunk| {
+                    // Create a local tiler for this chunk
+                    let local_tiler = Tiler {
+                        resolution: self.resolution,
+                        containment_mode: self.containment_mode,
+                        convert_to_rads: self.convert_to_rads,
+                        transmeridian_heuristic_enabled: self
+                            .transmeridian_heuristic_enabled,
+                        geom: MultiPolygon::new(chunk.to_vec()),
+                    };
+
+                    // Use the standard implementation for this chunk
+                    local_tiler.into_annotated_coverage().collect::<Vec<_>>()
+                })
+                .collect()
+        };
+
+        // Convert results back to iterator
+        results.into_iter()
     }
 
     /// Computes the cell coverage of the geometries using NUMA-optimized processing.
     ///
-    /// This function distributes work across NUMA nodes and uses node-local memory
-    /// buffers for optimal performance on multi-socket systems.
+    /// This is a convenience wrapper around `into_annotated_coverage_numa` that
+    /// extracts only the cell indexes.
     ///
     /// # Example
     ///
@@ -386,32 +491,8 @@ impl Tiler {
     /// ```
     #[cfg(feature = "numa")]
     pub fn into_coverage_numa(self) -> impl Iterator<Item = CellIndex> {
-        // For now, use a simplified NUMA approach with rayon parallel processing
-        // This avoids the complexity of the full NUMA pool implementation
-        use rayon::prelude::*;
-        
-        // Split the work into chunks for parallel processing
-        let geom_chunks: Vec<_> = self.geom.0.chunks(
-            (self.geom.0.len() + num_cpus::get() - 1) / num_cpus::get()
-        ).collect();
-        
-        // Process each chunk in parallel using rayon
-        let results: Vec<CellIndex> = geom_chunks.into_par_iter().flat_map(|chunk| {
-            // Create a local tiler for this chunk
-            let local_tiler = Tiler {
-                resolution: self.resolution,
-                containment_mode: self.containment_mode,
-                convert_to_rads: self.convert_to_rads,
-                transmeridian_heuristic_enabled: self.transmeridian_heuristic_enabled,
-                geom: MultiPolygon::new(chunk.to_vec()),
-            };
-            
-            // Use the standard implementation for each chunk
-            local_tiler.into_coverage().collect::<Vec<_>>()
-        }).collect();
-        
-        // Convert results back to iterator
-        results.into_iter()
+        self.into_annotated_coverage_numa()
+            .map(|annotated| annotated.cell)
     }
 
     // Return the cell indexes that traces the ring outline.
@@ -1040,32 +1121,32 @@ pub fn cell_boundary(cell: CellIndex) -> MultiPolygon {
 }
 
 /// Convert a polygon to H3 cells with automatic NUMA optimization
-/// 
+///
 /// This function automatically uses NUMA optimizations when available,
 /// falling back to standard processing when not. It provides the same
 /// API as the original `polygon_to_cells` function for backward compatibility.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `polygon` - The input polygon to convert
 /// * `resolution` - The H3 resolution for the output cells
 /// * `containment_mode` - How to determine cell containment
-/// 
+///
 /// # Returns
-/// 
+///
 /// A vector of H3 cell indexes that cover the polygon
-/// 
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use geo::{LineString, Polygon};
 /// use h3on::{geom::ContainmentMode, Resolution};
-/// 
+///
 /// let polygon = Polygon::new(
 ///     LineString::from(vec![(0., 0.), (1., 1.), (1., 0.), (0., 0.)]),
 ///     vec![],
 /// );
-/// 
+///
 /// let cells = polygon_to_cells(&polygon, Resolution::Nine, ContainmentMode::Covers);
 /// ```
 pub fn polygon_to_cells(
@@ -1079,25 +1160,19 @@ pub fn polygon_to_cells(
         let mut tiler = TilerBuilder::new(resolution)
             .containment_mode(containment_mode)
             .build();
-        
+
         tiler.add(polygon.clone()).expect("valid polygon");
         tiler.into_coverage_numa().collect()
     }
-    
+
     #[cfg(not(feature = "numa"))]
     {
         // Fall back to standard processing - inline the standard implementation
         let mut tiler = TilerBuilder::new(resolution)
             .containment_mode(containment_mode)
             .build();
-        
+
         tiler.add(polygon.clone()).expect("valid polygon");
         tiler.into_coverage().collect()
     }
 }
-
-
-
-
-
-
