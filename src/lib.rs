@@ -263,7 +263,7 @@ pub mod geom;
 mod grid;
 mod index;
 #[cfg(feature = "numa")]
-mod numa;
+pub mod numa;
 #[cfg(feature = "rayon")]
 mod parallel;
 mod resolution;
