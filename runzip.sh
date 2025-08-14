@@ -14,14 +14,16 @@ PATTERN="${ARCHIVE_PREFIX}_*.tar.gz"   # 기존 압축파일 삭제 패턴
 TS="$(date +%Y%m%d_%H%M%S)"
 ARCHIVE_NAME="${ARCHIVE_PREFIX}_${TS}.tar.gz"
 ARCHIVE_PATH="${ARCHIVE_DIR%/}/${ARCHIVE_NAME}"
+BENCH_GROUP="NUMA_Parallel_Performance"
 
 echo "[1/3] 기존 압축파일 삭제(${PATTERN})"
 find "${ARCHIVE_DIR}" -maxdepth 1 -type f -name "${PATTERN}" -print -delete || true
+rm -rf ${CRITERION_DIR}
 
-echo "[2/3] cargo bench 실행 (areNeighborCells)"
+echo "[2/3] cargo bench 실행 (${BENCH_GROUP})"
 # 필요 시 --bench-filter 사용 가능. 현재는 명령 그대로 실행
 #cargo bench --features numa -- areNeighborCells
-cargo bench --features numa -- NUMA_Parallel_Performance
+cargo bench --features numa -- ${BENCH_GROUP}
 
 # 결과 디렉터리 존재 확인
 if [[ ! -d "${CRITERION_DIR}" ]]; then
