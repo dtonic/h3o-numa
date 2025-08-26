@@ -27,7 +27,7 @@ pub fn bench(c: &mut Criterion) {
 
 
 
-    // 다양한 크기의 데이터셋으로 테스트 (linear 증가)
+    // 다양한 크기의 데이터셋으로 테스트 (linear 증가), 800000개 이상은 데이터 생성이 충분하지 않음
     let dataset_sizes = [100, 1000, 10000, 100000, 200000, 400000, 600000];
     
     for &size in &dataset_sizes {
