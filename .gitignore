@@ -5,3 +5,4 @@ lcov.info
 lcov_correct.info
 *.swp
 .DS_Store
+*.log

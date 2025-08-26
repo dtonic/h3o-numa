@@ -27,8 +27,8 @@ pub fn bench(c: &mut Criterion) {
 
 
 
-    // 다양한 크기의 데이터셋으로 테스트
-    let dataset_sizes = [100, 1000, 10000, 100000];
+    // 다양한 크기의 데이터셋으로 테스트 (linear 증가)
+    let dataset_sizes = [100, 1000, 10000, 100000, 200000, 400000, 600000];
     
     for &size in &dataset_sizes {
         let test_data = generate_test_dataset(size);
@@ -77,8 +77,8 @@ pub fn bench(c: &mut Criterion) {
         // );
     }
     
-    // 3. 대용량 데이터 처리: 모든 벤치마크 실행
-    let large_dataset = generate_large_dataset(500000);
+    // 3. 대용량 데이터 처리: 500,000 cells (기존 호환성 유지)
+    let large_dataset = generate_test_dataset(500000); // generate_large_dataset 대신 generate_test_dataset 사용
     println!("Large dataset: generated {} cells", large_dataset.len());
     
     // 대용량 데이터에서도 Sequential, Parallel, NUMA 모두 실행
@@ -91,13 +91,8 @@ pub fn bench(c: &mut Criterion) {
     });
     
     group.bench_function("h3on/Large_Dataset_NUMA", |b| {
-        bench_h3on_numa_large(b, &large_dataset)
+        bench_h3on_numa(b, &large_dataset) // bench_h3on_numa_large 대신 bench_h3on_numa 사용
     });
-    
-    // h3o는 단일 스레드 기반이므로 병렬화 벤치마크 제거
-    // group.bench_function("h3o/Large_Dataset_Parallel", |b| {
-    //     bench_h3o_parallel_large(b, &large_dataset)
-    // });
     
     // 4. Locality 테스트: 지역적으로 가까운 셀들
     let locality_dataset = generate_locality_dataset(10000);
@@ -119,65 +114,27 @@ pub fn bench(c: &mut Criterion) {
 
 fn generate_test_dataset(size: usize) -> Vec<CellIndex> {
     let mut cells = Vec::with_capacity(size);
-    let base_cell = CellIndex::try_from(0x89283080ddbffff).expect("base cell");
     
-    for i in 0..size {
-        // 해상도별로 다른 셀 생성 (0-14)
-        let res = (i % 15) as u8;
-        let resolution = Resolution::try_from(res).unwrap();
-        
-        // 부모 셀에서 자식 셀 생성
-        if let Some(cell) = base_cell.children(resolution).nth(i % 100) {
-            cells.push(cell);
-        }
-        
-        // 충분한 셀이 생성되지 않으면 다른 방법으로 추가
-        if cells.len() < i + 1 {
-            // 다른 해상도의 base cell 사용
-            let alt_res = ((i + 7) % 15) as u8;
-            let alt_resolution = Resolution::try_from(alt_res).unwrap();
-            if let Some(cell) = base_cell.children(alt_resolution).nth((i + 13) % 50) {
-                cells.push(cell);
-            }
-        }
-    }
-    
-    // 최소한 size만큼의 셀을 보장
-    while cells.len() < size {
-        let extra_res = (cells.len() % 15) as u8;
-        let extra_resolution = Resolution::try_from(extra_res).unwrap();
-        if let Some(cell) = base_cell.children(extra_resolution).nth(cells.len() % 200) {
-            cells.push(cell);
-        } else {
-            break; // 더 이상 생성할 수 없으면 중단
-        }
-    }
-    
-    println!("Generated {} cells for size {}", cells.len(), size);
-    cells
-}
-
-fn generate_large_dataset(size: usize) -> Vec<CellIndex> {
-    let mut cells = Vec::with_capacity(size);
+    // 여러 base cell을 사용하여 더 많은 고유한 셀 생성 (유효한 base cell만 사용)
     let base_cells = [
-        0x89283080ddbffff,
-        0x89283080c37ffff,
-        0x89283080c27ffff,
-        0x89283080d53ffff,
-        0x89283080dcfffff,
-        0x89283080dc3ffff,
+        0x89283080ddbffff, // 유효한 base cell
+        0x89283080c37ffff, // 유효한 base cell
+        0x89283080c27ffff, // 유효한 base cell
+        0x89283080d53ffff, // 유효한 base cell
+        0x89283080dcfffff, // 유효한 base cell
+        0x89283080dc3ffff, // 유효한 base cell
     ];
     
-    // 더 간단하고 확실한 방법: 각 base cell에서 직접 셀 생성
+    // 더 안전한 방법: 각 base cell에서 해상도별로 체계적으로 셀 생성
     for &base_val in &base_cells {
         if cells.len() >= size {
             break;
         }
         
-        let base_cell = CellIndex::try_from(base_val).expect("base cell");
+        let base_cell = CellIndex::try_from(base_val).expect("valid base cell");
         
-        // 해상도 0부터 시작하여 충분한 셀 생성
-        for res in 0..15u8 {  // 0-14 해상도 모두 시도
+        // 해상도 0부터 14까지 순차적으로 생성
+        for res in 0..15u8 {
             if cells.len() >= size {
                 break;
             }
@@ -194,27 +151,41 @@ fn generate_large_dataset(size: usize) -> Vec<CellIndex> {
         }
     }
     
-    // 추가 셀 생성으로 부족분 보충
+    // 부족한 경우 다른 base cell에서 추가 생성
     if cells.len() < size {
-        let mut extra_count = 0;
-        while cells.len() < size && extra_count < size * 10 {
-            let base_idx = extra_count % base_cells.len();
-            let base_cell = CellIndex::try_from(base_cells[base_idx]).expect("base cell");
-            let res = (extra_count % 15) as u8;
-            let resolution = Resolution::try_from(res).unwrap();
+        let mut extra_base_idx = 0;
+        while cells.len() < size && extra_base_idx < base_cells.len() * 5 {
+            let base_cell = CellIndex::try_from(base_cells[extra_base_idx % base_cells.len()]).expect("valid base cell");
             
-            // 다른 인덱스 사용하여 중복 방지
-            if let Some(cell) = base_cell.children(resolution).nth(extra_count % 1000) {
-                cells.push(cell);
+            // 해상도 0-14를 순환하면서 추가 셀 생성
+            for res in 0..15u8 {
+                if cells.len() >= size {
+                    break;
+                }
+                
+                let resolution = Resolution::try_from(res).unwrap();
+                
+                // 다른 인덱스로 중복 방지
+                let start_idx = (extra_base_idx + res as usize) % 100;
+                for (i, child) in base_cell.children(resolution).enumerate() {
+                    if i < start_idx {
+                        continue;
+                    }
+                    if cells.len() >= size {
+                        break;
+                    }
+                    cells.push(child);
+                }
             }
-            extra_count += 1;
+            extra_base_idx += 1;
         }
     }
     
-    println!("Generated {} cells for large dataset size {} (target: {})", 
-             cells.len(), size, size);
+    println!("Generated {} cells for size {} (target: {})", cells.len(), size, size);
     cells
 }
+
+
 
 fn generate_locality_dataset(size: usize) -> Vec<CellIndex> {
     let mut cells = Vec::with_capacity(size);
@@ -379,59 +350,7 @@ fn bench_h3on_numa(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
     );
 }
 
-fn bench_h3on_numa_large(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
-    use criterion::BatchSize;
-    
-    // NUMA 컨텍스트를 1회만 초기화 (벤치마크 루프 외부)
-    #[cfg(feature = "numa")]
-    let numa_ctx = {
-        let ctx = init_numa_once(data.len() * 2); // 대용량 데이터용 버퍼 크기
-        // 🚀 해당 벤치마크의 NUMA 설정 정보를 한 번만 출력 (메모리 할당 확인용)
-        static PRINTED_LARGE: AtomicBool = AtomicBool::new(false);
-        if !PRINTED_LARGE.fetch_or(true, Ordering::Relaxed) {
-            println!("NUMA Large Setup for {} cells: buffer sizes: {:?}", data.len(), ctx.buffer_sizes);
-        }
-        ctx
-    };
-    
-    b.iter_batched(
-        || Arc::new(data.to_vec()), // setup: Arc로 감싼 데이터 준비
-        |data_arc| {
-            #[cfg(feature = "numa")]
-            {
-                // 이미 생성된 NUMA 컨텍스트 재사용
-                let result = h3on::numa::build_numa_pool(&numa_ctx.topo, numa_ctx.buffer_sizes, || {
-                    data_arc.par_iter()
-                        .with_min_len(1000)
-                        .map(|&cell| {
-                            // 대용량 데이터에 최적화된 연산
-                            let disk = cell.grid_disk::<Vec<_>>(3);
-                            let distances = cell.grid_disk_distances::<Vec<_>>(3);
-                            (disk.len(), distances.len())
-                        })
-                        .collect::<Vec<_>>()
-                });
-                black_box(result)
-            }
-            
-            #[cfg(not(feature = "numa"))]
-            {
-                // 기본 병렬 처리
-                let result: Vec<_> = data_arc.par_iter()
-                    .with_min_len(1000)
-                    .map(|&cell| {
-                        let disk = cell.grid_disk::<Vec<_>>(3);
-                        let distances = cell.grid_disk_distances::<Vec<_>>(3);
-                        (disk.len(), distances.len())
-                    })
-                    .collect();
-                
-                black_box(result)
-            }
-        },
-        BatchSize::LargeInput
-    );
-}
+
 
 fn bench_h3on_locality(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
     let data = Arc::new(data.to_vec());
