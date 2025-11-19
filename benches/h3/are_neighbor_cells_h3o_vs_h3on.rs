@@ -1,5 +1,6 @@
-use criterion::{black_box, Bencher, Criterion};
+use criterion::{Bencher, Criterion};
 use h3on::CellIndex;
+use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     use criterion::BenchmarkId;
@@ -13,12 +14,16 @@ pub fn bench(c: &mut Criterion) {
     ];
 
     for (case_name, origin, index) in cases.iter() {
-        group.bench_with_input(BenchmarkId::new("h3on", case_name), &(index, origin), |b, &(index, origin)| {
-            bench_h3on(b, *index, *origin)
-        });
-        group.bench_with_input(BenchmarkId::new("h3o", case_name), &(index, origin), |b, &(index, origin)| {
-            bench_h3o(b, *index, *origin)
-        });
+        group.bench_with_input(
+            BenchmarkId::new("h3on", case_name),
+            &(index, origin),
+            |b, &(index, origin)| bench_h3on(b, *index, *origin),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("h3o", case_name),
+            &(index, origin),
+            |b, &(index, origin)| bench_h3o(b, *index, *origin),
+        );
     }
 
     group.finish();
@@ -37,4 +42,3 @@ fn bench_h3o(b: &mut Bencher<'_>, index: u64, origin: u64) {
     let index = h3o::CellIndex::try_from(index).expect("index");
     b.iter(|| black_box(origin).is_neighbor_with(black_box(index)))
 }
-
