@@ -19,6 +19,19 @@ pub fn bench(c: &mut Criterion) {
             CellIndex::uncompact_size(black_box(iter), black_box(RESOLUTION))
         })
     });
+    group.bench_function("h3o", |b| {
+        let h3o_resolution = h3o::Resolution::try_from(u8::from(RESOLUTION))
+            .expect("resolution");
+        b.iter(|| {
+            let iter = compacted.iter().copied().map(|cell| {
+                h3o::CellIndex::try_from(u64::from(cell)).expect("cell index")
+            });
+            h3o::CellIndex::uncompact_size(
+                black_box(iter),
+                black_box(h3o_resolution),
+            )
+        })
+    });
     group.bench_function("h3", |b| {
         let cells =
             compacted.iter().copied().map(u64::from).collect::<Vec<_>>();
