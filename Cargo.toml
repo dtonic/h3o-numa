@@ -28,7 +28,7 @@ default = ["std"]
 std = ["dep:ahash"]
 geo = ["dep:geo"]
 serde = ["dep:serde", "dep:serde_repr"]
-tools = ["polyfit-rs"]
+tools = ["polyfit-rs", "dep:clap"]
 typed_floats = ["dep:typed_floats"]
 
 [dependencies]
@@ -43,6 +43,7 @@ polyfit-rs = { version = "0.2", optional = true, default-features = false }
 serde = { version = "1.0", optional = true, default-features = false, features = ["derive"] }
 serde_repr = { version = "0.1", optional = true, default-features = false }
 typed_floats = { version = "1.0", optional = true, default-features = false }
+clap = { version = "4.5", optional = true, features = ["derive"] }
 
 [dev-dependencies]
 approx = { version = "0.5", default-features = false }
@@ -53,6 +54,11 @@ h3ron-h3-sys = { version = "0.17", default-features = false }
 [[bin]]
 name = "average_edge_length"
 path = "tools/average_edge_length.rs"
+required-features = ["tools"]
+
+[[bin]]
+name = "gen_index_stdout"
+path = "tools/gen_index_stdout.rs"
 required-features = ["tools"]
 
 [[bench]]
