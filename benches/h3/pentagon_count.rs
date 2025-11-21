@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::Resolution;
+use h3on::Resolution;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("pentagonCount");

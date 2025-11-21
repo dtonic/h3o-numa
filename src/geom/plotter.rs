@@ -9,7 +9,7 @@ use geo::{Line, ToRadians as _};
 ///
 /// ```rust
 /// use geo::line_string;
-/// use h3o::{geom::PlotterBuilder, Resolution};
+/// use h3on::{geom::PlotterBuilder, Resolution};
 ///
 /// let mut plotter = PlotterBuilder::new(Resolution::Ten).build();
 /// plotter.add_batch(line_string![
@@ -20,7 +20,7 @@ use geo::{Line, ToRadians as _};
 ///
 /// let cells = plotter.plot().collect::<Result<Vec<_>, _>>()?;
 ///
-/// # Ok::<(), h3o::error::PlotterError>(())
+/// # Ok::<(), h3on::error::PlotterError>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct Plotter {

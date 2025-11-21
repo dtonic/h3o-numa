@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::{CellIndex, Resolution};
+use h3on::{CellIndex, Resolution};
 
 macro_rules! test {
     ($name:ident, $compacted:expr, $resolution:literal) => {

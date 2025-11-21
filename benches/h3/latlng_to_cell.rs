@@ -1,5 +1,5 @@
 use criterion::{Bencher, BenchmarkId, Criterion};
-use h3o::{LatLng, Resolution};
+use h3on::{LatLng, Resolution};
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
@@ -8,7 +8,7 @@ pub fn bench(c: &mut Criterion) {
     let ll = LatLng::new(48.85458622023985, 2.373012457671282).expect("hex");
     for resolution in 0..=15 {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Hexagon", resolution),
+            BenchmarkId::new("h3on/Hexagon", resolution),
             &resolution,
             |b, &resolution| bench_h3o(b, ll, resolution),
         );
@@ -22,7 +22,7 @@ pub fn bench(c: &mut Criterion) {
     let ll = LatLng::new(64.70000012793489, 10.53619907546772).expect("pent");
     for resolution in 0..=15 {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Pentagon", resolution),
+            BenchmarkId::new("h3on/Pentagon", resolution),
             &resolution,
             |b, &resolution| bench_h3o(b, ll, resolution),
         );
@@ -38,7 +38,7 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o(b: &mut Bencher<'_>, ll: LatLng, resolution: u8) {
+fn bench_h3on(b: &mut Bencher<'_>, ll: LatLng, resolution: u8) {
     let resolution = Resolution::try_from(resolution).expect("resolution");
     b.iter(|| black_box(ll).to_cell(black_box(resolution)))
 }

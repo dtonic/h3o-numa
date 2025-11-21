@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::Resolution;
+use h3on::Resolution;
 use std::hint::black_box;
 
 pub fn bench_km2(c: &mut Criterion) {

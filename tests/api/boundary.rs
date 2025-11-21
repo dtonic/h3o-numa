@@ -1,4 +1,4 @@
-use h3o::DirectedEdgeIndex;
+use h3on::DirectedEdgeIndex;
 
 #[test]
 fn display() {

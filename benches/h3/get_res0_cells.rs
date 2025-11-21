@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {

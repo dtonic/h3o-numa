@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-//! The `h3o` library implements the H3 geospatial indexing system.
+//! The `h3on` library implements the H3 geospatial indexing system.
 //!
 //! H3 is a geospatial indexing system using a hexagonal grid that can be
 //! (approximately) subdivided into finer and finer hexagonal grids, combining
@@ -8,7 +8,7 @@
 //! ## Crate features
 //!
 //! * **std** -
-//!   When enabled, this will cause `h3o` to use the standard library. In terms of
+//!   When enabled, this will cause `h3on` to use the standard library. In terms of
 //!   APIs, `std` causes error types to implement the `std::error::Error` trait.
 //!   Enabling `std` will also result in performance optimizations.
 //!
@@ -312,7 +312,7 @@ const TWO_PI: f64 = 2. * core::f64::consts::PI;
 /// # Example
 ///
 /// ```
-/// let count = h3o::max_grid_disk_size(3);
+/// let count = h3on::max_grid_disk_size(3);
 /// ```
 #[must_use]
 pub const fn max_grid_disk_size(k: u32) -> u64 {
@@ -334,7 +334,7 @@ pub const fn max_grid_disk_size(k: u32) -> u64 {
 /// # Example
 ///
 /// ```
-/// let count = h3o::max_grid_ring_size(3);
+/// let count = h3on::max_grid_ring_size(3);
 /// ```
 #[must_use]
 pub const fn max_grid_ring_size(k: u32) -> u64 {

@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::DirectedEdgeIndex;
+use h3on::DirectedEdgeIndex;
 use std::hint::black_box;
 
 const INPUT: u64 = 0x13f2834782b9c2ab;

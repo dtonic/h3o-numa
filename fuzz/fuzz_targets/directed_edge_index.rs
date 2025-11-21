@@ -1,7 +1,7 @@
 #![no_main]
 
 use float_eq::assert_float_eq;
-use h3o::{Boundary, CellIndex, DirectedEdgeIndex, LatLng};
+use h3on::{Boundary, CellIndex, DirectedEdgeIndex, LatLng};
 use libfuzzer_sys::fuzz_target;
 
 const EPSILON: f64 = 1.7453292519943295e-11;

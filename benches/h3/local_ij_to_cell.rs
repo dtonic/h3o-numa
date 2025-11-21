@@ -1,6 +1,6 @@
 use super::constants::HEXAGONS;
 use criterion::{BenchmarkId, Criterion};
-use h3o::{CellIndex, CoordIJ, LocalIJ};
+use h3on::{CellIndex, CoordIJ, LocalIJ};
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {

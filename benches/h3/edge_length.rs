@@ -1,6 +1,6 @@
 use super::constants::{HEXAGONS, PENTAGONS};
 use criterion::{Bencher, BenchmarkId, Criterion};
-use h3o::{CellIndex, DirectedEdgeIndex};
+use h3on::{CellIndex, DirectedEdgeIndex};
 use std::hint::black_box;
 
 pub fn bench_rads(c: &mut Criterion) {
@@ -69,7 +69,7 @@ fn bench_edge_length<F, G>(
         let edge = cell.edges().next().expect("edge index");
 
         group.bench_with_input(
-            BenchmarkId::new("h3o/Hexagon", resolution),
+            BenchmarkId::new("h3on/Hexagon", resolution),
             &edge,
             bench_h3o,
         );
@@ -85,7 +85,7 @@ fn bench_edge_length<F, G>(
         let edge = cell.edges().next().expect("edge index");
 
         group.bench_with_input(
-            BenchmarkId::new("h3o/Pentagon", resolution),
+            BenchmarkId::new("h3on/Pentagon", resolution),
             &edge,
             bench_h3o,
         );

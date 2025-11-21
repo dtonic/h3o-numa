@@ -7,7 +7,7 @@ pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("maxGridDiskSize");
 
     group.bench_function("h3o", |b| {
-        b.iter(|| h3o::max_grid_disk_size(black_box(K)))
+        b.iter(|| h3on::max_grid_disk_size(black_box(K)))
     });
     group.bench_function("h3", |b| {
         b.iter(|| {

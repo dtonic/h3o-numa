@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use h3o::BaseCell;
+use h3on::BaseCell;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("res0CellCount");

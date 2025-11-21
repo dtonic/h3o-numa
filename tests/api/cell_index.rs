@@ -1,4 +1,4 @@
-use h3o::{CellIndex, Resolution, error};
+use h3on::{CellIndex, Resolution, error};
 
 #[test]
 fn is_neighbor_with() {
@@ -102,12 +102,12 @@ fn child_position_roundtrip() {
 
 #[test]
 fn max_grid_ring_size() {
-    assert_eq!(h3o::max_grid_ring_size(2), 12);
+    assert_eq!(h3on::max_grid_ring_size(2), 12);
 }
 
 #[test]
 fn max_grid_ring_size_identity() {
-    assert_eq!(h3o::max_grid_ring_size(0), 1);
+    assert_eq!(h3on::max_grid_ring_size(0), 1);
 }
 
 #[test]

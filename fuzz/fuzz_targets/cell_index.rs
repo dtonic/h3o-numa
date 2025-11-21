@@ -1,7 +1,7 @@
 #![no_main]
 
 use float_eq::assert_float_eq;
-use h3o::{
+use h3on::{
     BaseCell, Boundary, CellIndex, DirectedEdgeIndex, Face, LatLng, Resolution,
     VertexIndex,
 };

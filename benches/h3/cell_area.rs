@@ -1,6 +1,6 @@
 use super::constants::{HEXAGONS, PENTAGONS};
 use criterion::{Bencher, BenchmarkId, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::hint::black_box;
 
 pub fn bench_rads2(c: &mut Criterion) {
@@ -69,7 +69,7 @@ fn bench_cell_area<F, G>(
 
     for (resolution, index) in HEXAGONS.iter().enumerate() {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Hexagon", resolution),
+            BenchmarkId::new("h3on/Hexagon", resolution),
             index,
             bench_h3o,
         );
@@ -82,7 +82,7 @@ fn bench_cell_area<F, G>(
 
     for (resolution, index) in PENTAGONS.iter().enumerate() {
         group.bench_with_input(
-            BenchmarkId::new("h3o/Pentagon", resolution),
+            BenchmarkId::new("h3on/Pentagon", resolution),
             index,
             bench_h3o,
         );

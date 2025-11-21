@@ -1,5 +1,5 @@
 use criterion::{Bencher, Criterion};
-use h3o::LatLng;
+use h3on::LatLng;
 use std::hint::black_box;
 
 const SRC: (f64, f64) = (48.854501508844095, 2.3729695423293613);

@@ -18,14 +18,14 @@ Possible sections are:
 
 ### Added
 
-- `h3o::geom::Tiler::into_annotated_coverage`
+- `h3on::geom::Tiler::into_annotated_coverage`
 
 ## [0.9.2] - 2025-09-15
 
 ### Added
 
-- `h3o::max_grid_ring_size`
-- `h3o::CellIndex::grid_ring`
+- `h3on::max_grid_ring_size`
+- `h3on::CellIndex::grid_ring`
 
 ## [0.9.1] - 2025-09-02
 
@@ -48,7 +48,7 @@ Possible sections are:
 
 ### Added
 
-- `h3o::geom::Solvent` to compute the shape of a set of H3 cells.
+- `h3on::geom::Solvent` to compute the shape of a set of H3 cells.
     - opt-in duplicate detection
     - can works with heterogeneous set of cells
 
@@ -58,7 +58,7 @@ Possible sections are:
 
 ### Removed
 
-- `h3o::geom::dissolve` is removed.
+- `h3on::geom::dissolve` is removed.
     - you can use `SolventBuilder::new().build().dissolve(cells)` instead.
 
 ## [0.7.1] - 2024-12-24
@@ -71,8 +71,8 @@ Possible sections are:
 
 ### Added
 
-- `h3o::geom::Plotter` to compute the cells along lines.
-- `h3o::geom::Tiler` to compute the cell coverage of plane figures.
+- `h3on::geom::Plotter` to compute the cells along lines.
+- `h3on::geom::Tiler` to compute the cell coverage of plane figures.
 
 ### Changed
 
@@ -83,9 +83,9 @@ Possible sections are:
 
 - remove the geometry types wrapper (you can now use `geo` types directly).
 - remove the `ToCells` trait, now you can use:
-    - `h3o::LatLng` for `Point` & `MultiPoint`.
-    - `h3o::geom::Plotter` for `Line`, `LineString` and `MultiLineString`.
-    - `h3o::geom::Tiler` for `Polygon`, `MultiPolygon`, `Rect` and `Triangle`.
+    - `h3on::LatLng` for `Point` & `MultiPoint`.
+    - `h3on::geom::Plotter` for `Line`, `LineString` and `MultiLineString`.
+    - `h3on::geom::Tiler` for `Polygon`, `MultiPolygon`, `Rect` and `Triangle`.
 - `Geometry` and `GeometryCollection` are not directly supported
 - remove the support for `geoJSON`.
 - remove the `ToGeo` trait, now you can use:

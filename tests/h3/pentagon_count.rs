@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::Resolution;
+use h3on::Resolution;
 
 #[test]
 fn value() {

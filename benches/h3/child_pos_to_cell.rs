@@ -1,7 +1,7 @@
 use criterion::{
     BenchmarkGroup, BenchmarkId, Criterion, measurement::Measurement,
 };
-use h3o::{CellIndex, Resolution};
+use h3on::{CellIndex, Resolution};
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
@@ -33,7 +33,7 @@ pub fn bench(c: &mut Criterion) {
     .enumerate()
     {
         let resolution = idx as u8;
-        bench_h3o(&mut group, "h3o/Hexagon", HEXAGON, position, resolution);
+        bench_h3o(&mut group, "h3on/Hexagon", HEXAGON, position, resolution);
         bench_h3(&mut group, "h3/Hexagon", HEXAGON, position, resolution);
     }
 
@@ -60,7 +60,7 @@ pub fn bench(c: &mut Criterion) {
     .enumerate()
     {
         let resolution = idx as u8;
-        bench_h3o(&mut group, "h3o/Pentagon", PENTAGON, position, resolution);
+        bench_h3o(&mut group, "h3on/Pentagon", PENTAGON, position, resolution);
         bench_h3(&mut group, "h3/Pentagon", PENTAGON, position, resolution);
     }
 
@@ -69,7 +69,7 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o<T>(
+fn bench_h3on<T>(
     group: &mut BenchmarkGroup<T>,
     name: &'static str,
     index: u64,

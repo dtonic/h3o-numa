@@ -1,6 +1,6 @@
 use approx::assert_relative_eq;
 use geo::{Line, MultiPolygon, Point, coord};
-use h3o::{CellIndex, DirectedEdgeIndex, VertexIndex};
+use h3on::{CellIndex, DirectedEdgeIndex, VertexIndex};
 
 #[test]
 fn from_directed_edge() {

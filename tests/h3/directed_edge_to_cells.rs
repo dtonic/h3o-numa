@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::DirectedEdgeIndex;
+use h3on::DirectedEdgeIndex;
 
 macro_rules! test {
     ($name:ident, $index:literal) => {

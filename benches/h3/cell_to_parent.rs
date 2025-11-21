@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion};
-use h3o::{CellIndex, Resolution};
+use h3on::{CellIndex, Resolution};
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {

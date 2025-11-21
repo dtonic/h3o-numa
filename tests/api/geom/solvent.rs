@@ -2,7 +2,7 @@ use super::utils::load_polygon;
 use ahash::HashSet;
 use approx::{assert_relative_eq, relative_eq};
 use geo::{Area, BooleanOps, LineString, MultiPolygon, Polygon, polygon};
-use h3o::{
+use h3on::{
     CellIndex, Resolution,
     geom::{SolventBuilder, TilerBuilder},
 };

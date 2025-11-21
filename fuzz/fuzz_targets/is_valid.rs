@@ -1,6 +1,6 @@
 #![no_main]
 
-use h3o::{CellIndex, DirectedEdgeIndex, VertexIndex};
+use h3on::{CellIndex, DirectedEdgeIndex, VertexIndex};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|bits: u64| {

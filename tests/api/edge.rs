@@ -1,4 +1,4 @@
-use h3o::Edge;
+use h3on::Edge;
 
 #[test]
 fn try_from_u8() {

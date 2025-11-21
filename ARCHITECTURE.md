@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the high-level architecture of `h3o`.
+This document describes the high-level architecture of `h3on`.
 If you want to familiarize yourself with the code base, you are just in the
 right place!
 
@@ -81,4 +81,4 @@ Not as comprehensive as the test suite for now.
 A comprehensive benchmark suite lives under `benches`.
 
 Each public H3 function from the reference implementation is benched (through
-`h3ron-sys`) against its h3o equivalent.
+`h3ron-sys`) against its h3on equivalent.

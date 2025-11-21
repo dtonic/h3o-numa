@@ -1,6 +1,6 @@
 #![no_main]
 
-use h3o::{CellIndex, DirectedEdgeIndex, LocalIJ};
+use h3on::{CellIndex, DirectedEdgeIndex, LocalIJ};
 use libfuzzer_sys::fuzz_target;
 use std::os::raw::c_int;
 
@@ -107,7 +107,7 @@ fn cell_to_local_ij(origin: CellIndex, index: CellIndex) -> Option<LocalIJ> {
     let res = unsafe {
         h3ron_h3_sys::cellToLocalIj(origin.into(), index.into(), 0, &mut out)
     };
-    (res == 0).then(|| LocalIJ::new(origin, h3o::CoordIJ::new(out.i, out.j)))
+    (res == 0).then(|| LocalIJ::new(origin, h3on::CoordIJ::new(out.i, out.j)))
 }
 
 // }}}

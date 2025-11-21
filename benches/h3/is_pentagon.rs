@@ -1,6 +1,6 @@
 use super::constants::PENTAGONS;
 use criterion::{BenchmarkId, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::hint::black_box;
 
 const HEXAGON: u64 = 0x8f734e64992d6d8;

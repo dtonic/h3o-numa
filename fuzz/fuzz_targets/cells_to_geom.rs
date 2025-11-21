@@ -1,6 +1,6 @@
 #![no_main]
 
-use h3o::{geom::SolventBuilder, CellIndex};
+use h3on::{geom::SolventBuilder, CellIndex};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: Vec<u64>| {

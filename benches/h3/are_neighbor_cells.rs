@@ -1,30 +1,30 @@
 use criterion::{Bencher, Criterion};
-use h3o::CellIndex;
+use h3on::CellIndex;
 use std::hint::black_box;
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("areNeighborCells");
 
     let (origin, index) = (0x0890153a1017ffff, 0x890153a1003ffff);
-    group.bench_function("h3o/SameParentCenter", |b| {
+    group.bench_function("h3on/SameParentCenter", |b| {
         bench_h3o(b, index, origin)
     });
     group.bench_function("h3/SameParentCenter", |b| bench_h3(b, index, origin));
 
     let (origin, index) = (0x0890153a1017ffff, 0x0890153a1013ffff);
     group
-        .bench_function("h3o/SameParentOther", |b| bench_h3o(b, index, origin));
+        .bench_function("h3on/SameParentOther", |b| bench_h3o(b, index, origin));
     group.bench_function("h3/SameParentOther", |b| bench_h3(b, index, origin));
 
     // This pair uses the fast unsafe implementation of grid disk.
     let (origin, index) = (0x0890153a1017ffff, 0x0890153a10bbffff);
     group
-        .bench_function("h3o/DifferentParent", |b| bench_h3o(b, index, origin));
+        .bench_function("h3on/DifferentParent", |b| bench_h3o(b, index, origin));
     group.bench_function("h3/DifferentParent", |b| bench_h3(b, index, origin));
 
     // This pair uses the slow safe implementation of grid disk.
     let (origin, index) = (0x08908000001bffff, 0x08908000000fffff);
-    group.bench_function("h3o/DifferentParentFallback", |b| {
+    group.bench_function("h3on/DifferentParentFallback", |b| {
         bench_h3o(b, index, origin)
     });
     group.bench_function("h3/DifferentParentFallback", |b| {
@@ -36,7 +36,7 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn bench_h3o(b: &mut Bencher<'_>, index: u64, origin: u64) {
+fn bench_h3on(b: &mut Bencher<'_>, index: u64, origin: u64) {
     let origin = CellIndex::try_from(origin).expect("origin");
     let index = CellIndex::try_from(index).expect("index");
     b.iter(|| black_box(origin).is_neighbor_with(black_box(index)))

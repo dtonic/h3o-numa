@@ -1,5 +1,5 @@
 use super::h3api;
-use h3o::{CellIndex, LatLng, Resolution};
+use h3on::{CellIndex, LatLng, Resolution};
 use std::{
     fs::File,
     io::{BufRead, BufReader},

@@ -1,9 +1,9 @@
-# h3o
+# h3on
 
-[![Crates.io](https://img.shields.io/crates/v/h3o.svg)](https://crates.io/crates/h3o)
-[![Docs.rs](https://docs.rs/h3o/badge.svg)](https://docs.rs/h3o)
-[![CI Status](https://github.com/HydroniumLabs/h3o/actions/workflows/ci.yml/badge.svg)](https://github.com/HydroniumLabs/h3o/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/HydroniumLabs/h3o)](https://app.codecov.io/gh/HydroniumLabs/h3o)
+[![Crates.io](https://img.shields.io/crates/v/h3on.svg)](https://crates.io/crates/h3on)
+[![Docs.rs](https://docs.rs/h3on/badge.svg)](https://docs.rs/h3on)
+[![CI Status](https://github.com/HydroniumLabs/h3on/actions/workflows/ci.yml/badge.svg)](https://github.com/HydroniumLabs/h3on/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/HydroniumLabs/h3on)](https://app.codecov.io/gh/HydroniumLabs/h3on)
 [![License](https://img.shields.io/badge/license-BSD-green)](https://opensource.org/licenses/BSD-3-Clause)
 
 [Rust](https://rustlang.org) implementation of the [H3](https://h3geo.org)
@@ -25,12 +25,12 @@ The goals are:
 
 * Install the rust toolchain in order to have cargo installed by following
   [this](https://www.rust-lang.org/tools/install) guide.
-* run `cargo install h3o`
+* run `cargo install h3on`
 
 ## Usage
 
 ```rust
-use h3o::{LatLng, Resolution};
+use h3on::{LatLng, Resolution};
 
 let coord = LatLng::new(37.769377, -122.388903).expect("valid coord");
 let cell = coord.to_cell(Resolution::Nine);
