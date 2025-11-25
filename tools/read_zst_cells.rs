@@ -31,7 +31,6 @@ fn main() -> std::io::Result<()> {
     let mut invalid_count = 0_u64;
 
     println!("\nReading cells...");
-    println!("First 10 cells:");
 
     loop {
         match decoder.read_exact(&mut buf) {
@@ -43,7 +42,8 @@ fn main() -> std::io::Result<()> {
                     Ok(cell) => {
                         valid_count += 1;
 
-                        // Print first 10 cells
+                        // Print first 10 cells (debug mode only)
+                        #[cfg(debug_assertions)]
                         if valid_count <= 10 {
                             println!(
                                 "  {}: 0x{:016x} -> {:?}",
@@ -53,6 +53,7 @@ fn main() -> std::io::Result<()> {
                     }
                     Err(_) => {
                         invalid_count += 1;
+                        #[cfg(debug_assertions)]
                         if invalid_count <= 5 {
                             eprintln!(
                                 "  Invalid cell at position {}: 0x{:016x}",
@@ -62,7 +63,8 @@ fn main() -> std::io::Result<()> {
                     }
                 }
 
-                // Print progress every 100k cells
+                // Print progress every 100k cells (debug mode only)
+                #[cfg(debug_assertions)]
                 if count % 100_000 == 0 {
                     println!(
                         "Processed {} cells... ({} valid, {} invalid)",
