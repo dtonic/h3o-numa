@@ -1,5 +1,7 @@
-use criterion::{BenchmarkId, Criterion};
+use criterion::{BatchSize, BenchmarkId, Criterion};
 use h3on::CellIndex;
+use rand::{SeedableRng, seq::SliceRandom};
+use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
 use std::{
     fs::File,
@@ -149,7 +151,36 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn load_cells_from_zst(size: usize) -> Result<Vec<CellIndex>> {
+/// Reservoir Sampling을 사용한 메모리 효율적 랜덤 샘플링
+fn reservoir_sample(
+    iterator: &mut ZstCellIterator,
+    sample_size: usize,
+    rng: &mut ChaCha8Rng,
+) -> Vec<CellIndex> {
+    use rand::Rng;
+
+    let mut reservoir = Vec::with_capacity(sample_size);
+    let mut count = 0usize;
+
+    // 처음 sample_size개는 무조건 추가
+    for cell in iterator.by_ref().take(sample_size) {
+        reservoir.push(cell);
+        count += 1;
+    }
+
+    // 나머지는 확률적으로 교체
+    for cell in iterator {
+        count += 1;
+        let j = rng.gen_range(0..count);
+        if j < sample_size {
+            reservoir[j] = cell;
+        }
+    }
+
+    reservoir
+}
+
+fn load_cells_from_zst(size: usize, random: bool) -> Result<Vec<CellIndex>> {
     let project_root = std::env::var("CARGO_MANIFEST_DIR")
         .map_err(|e| Error::new(ErrorKind::Other, e))?;
     let dataset_path = Path::new(&project_root)
@@ -159,148 +190,126 @@ fn load_cells_from_zst(size: usize) -> Result<Vec<CellIndex>> {
     println!("Loading cells from {:?}", dataset_path);
 
     let mut iterator = ZstCellIterator::from_file(&dataset_path)?;
-    let cells: Vec<CellIndex> = iterator.by_ref().take(size).collect();
 
-    if cells.len() < size {
+    if random {
+        // Reservoir Sampling을 사용한 메모리 효율적 랜덤 샘플링
+        let mut rng = ChaCha8Rng::seed_from_u64(42);
+        let cells = reservoir_sample(&mut iterator, size, &mut rng);
+
         println!(
-            "Warning: Only {} cells available in dataset (requested {})",
-            cells.len(),
-            size
+            "Loaded {} random cells from dataset using reservoir sampling",
+            cells.len()
         );
+        Ok(cells)
     } else {
-        println!("Loaded {} cells from dataset", cells.len());
-    }
+        // 순차 로드 (기존 방식)
+        let cells: Vec<CellIndex> = iterator.by_ref().take(size).collect();
 
-    Ok(cells)
+        if cells.len() < size {
+            println!(
+                "Warning: Only {} cells available in dataset (requested {})",
+                cells.len(),
+                size
+            );
+        } else {
+            println!("Loaded {} cells from dataset", cells.len());
+        }
+
+        Ok(cells)
+    }
 }
 
 fn generate_test_dataset(size: usize) -> Vec<CellIndex> {
-    load_cells_from_zst(size).expect("Failed to load cells from zst file")
+    load_cells_from_zst(size, true).expect("Failed to load cells from zst file")
 }
 
 fn generate_locality_dataset(size: usize) -> Vec<CellIndex> {
-    // locality dataset도 zst 파일에서 로드하되, 앞부분의 연속된 셀들을 사용 (지역성 가정)
-    load_cells_from_zst(size).expect("Failed to load cells from zst file")
+    // locality dataset은 순차적으로 로드 (지역성 가정)
+    load_cells_from_zst(size, false)
+        .expect("Failed to load cells from zst file")
 }
 
 // -----------------------------------------------------------------------------
 
 fn bench_h3on_sequential(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
-    use criterion::BatchSize;
-
-    b.iter_batched(
-        || data.to_vec(), // setup: 데이터 복사
-        |data_copy| {
-            let result: Vec<_> = data_copy
-                .iter()
-                .map(|&cell| {
-                    // 각 셀에 대해 복잡한 연산 수행
-                    let neighbors = cell.grid_disk::<Vec<_>>(2);
-                    let area = cell.area_km2();
-                    let boundary = cell.boundary();
-                    (neighbors.len(), area, boundary.len())
-                })
-                .collect();
-
-            // black_box로 결과를 실제로 사용하여 dead code elimination 방지
-            black_box(result)
-        },
-        BatchSize::LargeInput, // 큰 입력에 최적화된 배치 크기
-    );
+    b.iter(|| {
+        let result = data
+            .iter()
+            .map(|&cell| {
+                let neighbors = cell.grid_disk::<Vec<_>>(2);
+                let area = cell.area_km2();
+                let boundary = cell.boundary();
+                (neighbors.len(), area, boundary.len())
+            })
+            .collect::<Vec<_>>();
+        black_box(result);
+    });
 }
 
 fn bench_h3on_parallel(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
-    use criterion::BatchSize;
-
-    b.iter_batched(
-        || Arc::new(data.to_vec()), // setup: Arc로 감싼 데이터 준비
-        |data_arc| {
-            let result: Vec<_> = data_arc
-                .par_iter()
-                .map(|&cell| {
-                    // 병렬로 복잡한 연산 수행
-                    let neighbors = cell.grid_disk::<Vec<_>>(2);
-                    let area = cell.area_km2();
-                    let boundary = cell.boundary();
-                    (neighbors.len(), area, boundary.len())
-                })
-                .collect();
-
-            // black_box로 결과를 실제로 사용
-            black_box(result)
-        },
-        BatchSize::LargeInput,
-    );
+    b.iter(|| {
+        let result = data
+            .par_iter()
+            .map(|&cell| {
+                let neighbors = cell.grid_disk::<Vec<_>>(2);
+                let area = cell.area_km2();
+                let boundary = cell.boundary();
+                (neighbors.len(), area, boundary.len())
+            })
+            .collect::<Vec<_>>();
+        black_box(result);
+    })
 }
 
 fn bench_h3on_numa(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
-    use criterion::BatchSize;
-
-    b.iter_batched(
-        || {
-            let numa_ctx = {
-                let ctx = init_numa_once(data.len());
-                // 🚀 해당 벤치마크의 NUMA 설정 정보를 한 번만 출력 (메모리 할당 확인용)
-                use std::sync::atomic::{AtomicBool, Ordering};
-                static PRINTED: AtomicBool = AtomicBool::new(false);
-                if !PRINTED.fetch_or(true, Ordering::Relaxed) {
-                    println!(
-                        "NUMA Setup for {} cells: buffer sizes: {:?}",
-                        data.len(),
-                        ctx.buffer_sizes
-                    );
-                }
-                ctx
-            };
-
-            (Arc::new(data.to_vec()), numa_ctx)
-        },
-        |(data_arc, numa_ctx)| {
-            // 이미 생성된 NUMA 컨텍스트 재사용
-            let result = h3on::numa::build_numa_pool(
-                &numa_ctx.topo,
-                numa_ctx.buffer_sizes,
-                || {
-                    data_arc
-                        .par_iter()
-                        .with_min_len(100)
-                        .map(|&cell| {
-                            let neighbors = cell.grid_disk::<Vec<_>>(2);
-                            let area = cell.area_km2();
-                            let boundary = cell.boundary();
-                            (neighbors.len(), area, boundary.len())
-                        })
-                        .collect::<Vec<_>>()
-                },
-            );
-            black_box(result)
-        },
-        BatchSize::LargeInput,
+    // NUMA 컨텍스트를 벤치마크 밖에서 한 번만 생성
+    let numa_ctx = init_numa_once(data.len());
+    println!(
+        "NUMA Setup for {} cells: buffer sizes: {:?}",
+        data.len(),
+        numa_ctx.buffer_sizes
     );
+
+    b.iter(|| {
+        let result = h3on::numa::build_numa_pool(
+            &numa_ctx.topo,
+            numa_ctx.buffer_sizes,
+            || {
+                data.par_iter()
+                    .with_min_len(100)
+                    .map(|&cell| {
+                        let neighbors = cell.grid_disk::<Vec<_>>(2);
+                        let area = cell.area_km2();
+                        let boundary = cell.boundary();
+                        (neighbors.len(), area, boundary.len())
+                    })
+                    .collect::<Vec<_>>()
+            },
+        );
+        black_box(result)
+    });
 }
 
 fn bench_h3on_locality(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
-    let data = Arc::new(data.to_vec());
-
     b.iter(|| {
         // 지역성 최적화: 가까운 셀들을 그룹화하여 처리
-        let mut results = Vec::new();
+        let results: Vec<_> = data
+            .chunks(100)
+            .flat_map(|chunk| {
+                chunk
+                    .par_iter()
+                    .map(|&cell| {
+                        // 지역적으로 가까운 셀들에 대한 연산
+                        let neighbors = cell.grid_disk::<Vec<_>>(1);
+                        let local_area =
+                            neighbors.iter().map(|n| n.area_km2()).sum::<f64>();
+                        (neighbors.len(), local_area)
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect();
 
-        for chunk in data.chunks(100) {
-            let chunk_results: Vec<_> = chunk
-                .par_iter()
-                .map(|&cell| {
-                    // 지역적으로 가까운 셀들에 대한 연산
-                    let neighbors = cell.grid_disk::<Vec<_>>(1);
-                    let local_area =
-                        neighbors.iter().map(|n| n.area_km2()).sum::<f64>();
-                    (neighbors.len(), local_area)
-                })
-                .collect();
-            results.extend(chunk_results);
-        }
-
-        results
+        black_box(results)
     });
 }
 
@@ -329,11 +338,6 @@ fn bench_h3o_sequential(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
         black_box(result)
     });
 }
-
-// h3o는 단일 스레드 기반이므로 병렬화 함수들 제거
-// fn bench_h3o_parallel(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) { ... }
-// fn bench_h3o_parallel_large(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) { ... }
-// fn bench_h3o_locality(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) { ... }
 
 // -----------------------------------------------------------------------------
 
