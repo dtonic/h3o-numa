@@ -32,7 +32,7 @@ tools = ["polyfit-rs"]
 typed_floats = ["dep:typed_floats"]
 zstd = ["dep:zstd"]
 rayon = ["dep:rayon"]
-numa = ["dep:rand", "dep:rand_chacha", "dep:num_cpus", "dep:once_cell", "dep:hwlocality", "dep:core_affinity", "rayon", "zstd"]
+numa = ["dep:num_cpus", "dep:once_cell", "dep:hwlocality", "dep:core_affinity", "rayon", "zstd"]
 
 [dependencies]
 ahash = { version = "0.8", optional = true, default-features = false, features = ["std", "compile-time-rng"] }
