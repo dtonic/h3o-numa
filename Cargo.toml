@@ -31,7 +31,7 @@ serde = ["dep:serde", "dep:serde_repr"]
 tools = ["polyfit-rs"]
 typed_floats = ["dep:typed_floats"]
 rayon = ["dep:rayon"]
-numa = ["dep:num_cpus", "dep:once_cell", "dep:hwlocality", "dep:core_affinity", "rayon"]
+numa = ["dep:zstd", "dep:num_cpus", "dep:once_cell", "dep:hwlocality", "dep:core_affinity", "rayon"]
 
 [dependencies]
 ahash = { version = "0.8", optional = true, default-features = false, features = ["std", "compile-time-rng"] }
@@ -51,6 +51,7 @@ hwlocality = { version = "1.0.0-alpha.11", optional = true }
 core_affinity = { version = "0.8", optional = true }
 once_cell = { version = "1.21", optional = true }
 num_cpus = { version = "1.17", optional = true }
+zstd = { version = "0.13.3", optional = true }
 
 [dev-dependencies]
 approx = { version = "0.5", default-features = false }
@@ -62,6 +63,11 @@ h3ron-h3-sys = { version = "0.17", default-features = false }
 name = "average_edge_length"
 path = "tools/average_edge_length.rs"
 required-features = ["tools"]
+
+[[bin]]
+name = "read_zst_cells"
+path = "tools/read_zst_cells.rs"
+required-features = ["numa"]
 
 [[bench]]
 harness = false

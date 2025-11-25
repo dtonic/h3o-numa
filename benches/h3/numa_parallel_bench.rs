@@ -1,7 +1,14 @@
 use criterion::{BenchmarkId, Criterion};
-use h3on::{CellIndex, Resolution};
+use h3on::CellIndex;
 use rayon::prelude::*;
-use std::{hint::black_box, sync::Arc};
+use std::{
+    fs::File,
+    hint::black_box,
+    io::{BufReader, Error, ErrorKind, Read, Result},
+    path::Path,
+    sync::Arc,
+};
+use zstd::stream::read::Decoder;
 
 // -----------------------------------------------------------------------------
 // NUMA 컨텍스트 구조체 (1회 초기화용)
@@ -14,6 +21,37 @@ fn init_numa_once(data_len: usize) -> NumaContext {
     let topo = h3on::numa::init_numa();
     let buffer_sizes = h3on::numa::estimate_buffer_sizes(15, data_len * 10);
     NumaContext { topo, buffer_sizes }
+}
+
+// -----------------------------------------------------------------------------
+
+struct ZstCellIterator {
+    decoder: Decoder<'static, BufReader<File>>,
+    buf: [u8; 8],
+}
+
+impl ZstCellIterator {
+    pub fn from_file(path: &Path) -> Result<Self> {
+        let file = File::open(path)?;
+        let mut decoder = Decoder::new(file)?;
+        // Set window log max to handle large compressed files (2GB window size)
+        decoder.window_log_max(31)?;
+        Ok(Self {
+            decoder,
+            buf: [0u8; 8],
+        })
+    }
+}
+
+impl Iterator for ZstCellIterator {
+    type Item = CellIndex;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.decoder.read_exact(&mut self.buf) {
+            Ok(_) => CellIndex::try_from(u64::from_le_bytes(self.buf)).ok(),
+            Err(_) => None,
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -111,156 +149,38 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-fn generate_test_dataset(size: usize) -> Vec<CellIndex> {
-    let mut cells = Vec::with_capacity(size);
+fn load_cells_from_zst(size: usize) -> Result<Vec<CellIndex>> {
+    let project_root = std::env::var("CARGO_MANIFEST_DIR")
+        .map_err(|e| Error::new(ErrorKind::Other, e))?;
+    let dataset_path = Path::new(&project_root)
+        .join("dataset")
+        .join("res9_cells.zst");
 
-    // 여러 base cell을 사용하여 더 많은 고유한 셀 생성 (유효한 base cell만 사용)
-    let base_cells = [
-        0x89283080ddbffff, // 유효한 base cell
-        0x89283080c37ffff, // 유효한 base cell
-        0x89283080c27ffff, // 유효한 base cell
-        0x89283080d53ffff, // 유효한 base cell
-        0x89283080dcfffff, // 유효한 base cell
-        0x89283080dc3ffff, // 유효한 base cell
-    ];
+    println!("Loading cells from {:?}", dataset_path);
 
-    // 더 안전한 방법: 각 base cell에서 해상도별로 체계적으로 셀 생성
-    for &base_val in &base_cells {
-        if cells.len() >= size {
-            break;
-        }
+    let mut iterator = ZstCellIterator::from_file(&dataset_path)?;
+    let cells: Vec<CellIndex> = iterator.by_ref().take(size).collect();
 
-        let base_cell = CellIndex::try_from(base_val).expect("valid base cell");
-
-        // 해상도 0부터 14까지 순차적으로 생성
-        for res in 0..15u8 {
-            if cells.len() >= size {
-                break;
-            }
-
-            let resolution = Resolution::try_from(res).unwrap();
-
-            // 각 해상도에서 사용 가능한 자식 셀들을 순차적으로 추가
-            for child in base_cell.children(resolution) {
-                if cells.len() >= size {
-                    break;
-                }
-                cells.push(child);
-            }
-        }
-    }
-
-    // 부족한 경우 다른 base cell에서 추가 생성
     if cells.len() < size {
-        let mut extra_base_idx = 0;
-        while cells.len() < size && extra_base_idx < base_cells.len() * 5 {
-            let base_cell = CellIndex::try_from(
-                base_cells[extra_base_idx % base_cells.len()],
-            )
-            .expect("valid base cell");
-
-            // 해상도 0-14를 순환하면서 추가 셀 생성
-            for res in 0..15u8 {
-                if cells.len() >= size {
-                    break;
-                }
-
-                let resolution = Resolution::try_from(res).unwrap();
-
-                // 다른 인덱스로 중복 방지
-                let start_idx = (extra_base_idx + res as usize) % 100;
-                for (i, child) in base_cell.children(resolution).enumerate() {
-                    if i < start_idx {
-                        continue;
-                    }
-                    if cells.len() >= size {
-                        break;
-                    }
-                    cells.push(child);
-                }
-            }
-            extra_base_idx += 1;
-        }
+        println!(
+            "Warning: Only {} cells available in dataset (requested {})",
+            cells.len(),
+            size
+        );
+    } else {
+        println!("Loaded {} cells from dataset", cells.len());
     }
 
-    println!(
-        "Generated {} cells for size {} (target: {})",
-        cells.len(),
-        size,
-        size
-    );
-    cells
+    Ok(cells)
+}
+
+fn generate_test_dataset(size: usize) -> Vec<CellIndex> {
+    load_cells_from_zst(size).expect("Failed to load cells from zst file")
 }
 
 fn generate_locality_dataset(size: usize) -> Vec<CellIndex> {
-    let mut cells = Vec::with_capacity(size);
-    let center = CellIndex::try_from(0x89283080ddbffff).expect("center cell");
-
-    // 중심 셀 주변의 지역적으로 가까운 셀들 생성
-    let disk_cells: Vec<_> =
-        center.grid_disk::<Vec<_>>(5).into_iter().collect();
-
-    for i in 0..size {
-        let cell_idx = i % disk_cells.len();
-        if let Some(cell) = disk_cells.get(cell_idx) {
-            cells.push(*cell);
-        }
-    }
-
-    // 충분한 셀이 생성되지 않으면 다른 방법으로 추가
-    while cells.len() < size {
-        let extra_center =
-            CellIndex::try_from(0x89283080c37ffff).expect("extra center cell");
-        let extra_disk_cells: Vec<_> =
-            extra_center.grid_disk::<Vec<_>>(3).into_iter().collect();
-
-        for (_i, cell) in extra_disk_cells.iter().enumerate() {
-            if cells.len() >= size {
-                break;
-            }
-            cells.push(*cell);
-        }
-
-        if cells.len() < size {
-            // 더 많은 base cell에서 생성
-            let more_centers = [
-                0x89283080c27ffff,
-                0x89283080d53ffff,
-                0x89283080dcfffff,
-                0x89283080dc3ffff,
-            ];
-
-            for center_val in &more_centers {
-                if cells.len() >= size {
-                    break;
-                }
-                if let Ok(center_cell) = CellIndex::try_from(*center_val) {
-                    let more_cells: Vec<_> = center_cell
-                        .grid_disk::<Vec<_>>(2)
-                        .into_iter()
-                        .collect();
-                    for cell in more_cells {
-                        if cells.len() >= size {
-                            break;
-                        }
-                        cells.push(cell);
-                    }
-                }
-            }
-        }
-
-        // 무한 루프 방지
-        if cells.len() == 0 {
-            break;
-        }
-    }
-
-    println!(
-        "Generated {} cells for locality dataset size {}",
-        cells.len(),
-        size
-    );
-    cells
+    // locality dataset도 zst 파일에서 로드하되, 앞부분의 연속된 셀들을 사용 (지역성 가정)
+    load_cells_from_zst(size).expect("Failed to load cells from zst file")
 }
 
 // -----------------------------------------------------------------------------
