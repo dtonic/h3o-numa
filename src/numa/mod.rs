@@ -9,7 +9,7 @@ pub mod pool;
 pub mod topo;
 
 #[cfg(feature = "numa")]
-pub use pool::{build_numa_pool, estimate_buffer_sizes, get_or_init_global_pool};
+pub use pool::{build_numa_pool, estimate_buffer_sizes};
 #[cfg(feature = "numa")]
 pub use topo::NumaTopology;
 
