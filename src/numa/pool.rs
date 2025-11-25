@@ -127,6 +127,14 @@ pub fn get_or_init_global_pool(
         let worker_cores: Vec<usize> =
             topo.cores_per_node.iter().flatten().copied().collect();
 
+        // Ensure we have at least one core to work with
+        if worker_cores.is_empty() {
+            // Fall back to default thread pool if no cores available
+            return ThreadPoolBuilder::new()
+                .build()
+                .expect("Failed to build default thread pool");
+        }
+
         let workers = worker_cores.len();
 
         // Create thread pool with custom spawn handler
