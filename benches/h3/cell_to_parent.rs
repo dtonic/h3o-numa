@@ -6,7 +6,6 @@ pub fn bench(c: &mut Criterion) {
     const INDEX: u64 = 0x8f734e64992d6d8;
     let mut group = c.benchmark_group("cellToParent");
 
-    dbg!("Starting cellToParent benchmarks");
     for resolution in 0..=15 {
         group.bench_with_input(
             BenchmarkId::new("h3o", resolution),

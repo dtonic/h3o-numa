@@ -32,7 +32,6 @@ pub fn bench(c: &mut Criterion) {
         println!("Dataset size {}: generated {} cells", size, test_data.len());
 
         // 1. 단일 스레드 vs 병렬 처리 비교
-        dbg!(size);
         group.bench_with_input(
             BenchmarkId::new("h3on/Sequential", size),
             &test_data,
@@ -268,8 +267,6 @@ fn generate_locality_dataset(size: usize) -> Vec<CellIndex> {
 
 fn bench_h3on_sequential(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
     use criterion::BatchSize;
-    eprintln!(">>> ENTERED bench_h3on_sequential function");
-    dbg!("Running h3on_sequential benchmark");
 
     b.iter_batched(
         || data.to_vec(), // setup: 데이터 복사
@@ -319,11 +316,8 @@ fn bench_h3on_parallel(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
 fn bench_h3on_numa(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
     use criterion::BatchSize;
 
-    dbg!("Starting bench_h3on_numa");
-
     b.iter_batched(
         || {
-            dbg!("Setup phase - initializing NUMA context");
             let numa_ctx = {
                 let ctx = init_numa_once(data.len());
                 // 🚀 해당 벤치마크의 NUMA 설정 정보를 한 번만 출력 (메모리 할당 확인용)
@@ -342,7 +336,6 @@ fn bench_h3on_numa(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
             (Arc::new(data.to_vec()), numa_ctx)
         },
         |(data_arc, numa_ctx)| {
-            dbg!("Running NUMA benchmark iteration");
             // 이미 생성된 NUMA 컨텍스트 재사용
             let result = h3on::numa::build_numa_pool(
                 &numa_ctx.topo,

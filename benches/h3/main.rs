@@ -155,8 +155,8 @@ criterion_main!(benches);
 criterion_group!(benches_numa, numa_parallel_bench::bench,);
 
 #[cfg(all(not(feature = "geo"), feature = "numa"))]
-criterion_main!(benches);
-// criterion_main!(benches, benches_numa);
+// criterion_main!(benches);
+criterion_main!(benches, benches_numa);
 
 #[cfg(feature = "geo")]
 criterion_group!(
