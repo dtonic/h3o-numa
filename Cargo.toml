@@ -60,7 +60,6 @@ criterion = { version = "0.7", default-features = false, features = ["plotters",
 geojson = { version = "0.24", default-features = false, features = ["geo-types"] }
 h3ron-h3-sys = { version = "0.17", default-features = false }
 rand = { version = "0.9", default-features = false, features = ["std", "std_rng"] }
-rand_chacha = { version = "0.9", default-features = false }
 
 [[bin]]
 name = "average_edge_length"

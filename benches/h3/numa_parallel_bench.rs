@@ -1,7 +1,6 @@
 use criterion::{BenchmarkId, Criterion};
 use h3on::CellIndex;
-use rand::{SeedableRng, seq::SliceRandom};
-use rand_chacha::ChaCha8Rng;
+use rand::{SeedableRng, rngs::StdRng, seq::SliceRandom};
 use rayon::prelude::*;
 use std::{
     fs::File,
@@ -150,35 +149,6 @@ pub fn bench(c: &mut Criterion) {
 
 // -----------------------------------------------------------------------------
 
-/// Reservoir Sampling을 사용한 메모리 효율적 랜덤 샘플링
-fn reservoir_sample(
-    iterator: &mut ZstCellIterator,
-    sample_size: usize,
-    rng: &mut ChaCha8Rng,
-) -> Vec<CellIndex> {
-    use rand::Rng;
-
-    let mut reservoir = Vec::with_capacity(sample_size);
-    let mut count = 0usize;
-
-    // 처음 sample_size개는 무조건 추가
-    for cell in iterator.by_ref().take(sample_size) {
-        reservoir.push(cell);
-        count += 1;
-    }
-
-    // 나머지는 확률적으로 교체
-    for cell in iterator {
-        count += 1;
-        let j = rng.gen_range(0..count);
-        if j < sample_size {
-            reservoir[j] = cell;
-        }
-    }
-
-    reservoir
-}
-
 fn load_cells_from_zst(size: usize, random: bool) -> Result<Vec<CellIndex>> {
     let project_root = std::env::var("CARGO_MANIFEST_DIR")
         .map_err(|e| Error::new(ErrorKind::Other, e))?;
@@ -190,32 +160,25 @@ fn load_cells_from_zst(size: usize, random: bool) -> Result<Vec<CellIndex>> {
 
     let mut iterator = ZstCellIterator::from_file(&dataset_path)?;
 
-    if random {
-        // Reservoir Sampling을 사용한 메모리 효율적 랜덤 샘플링
-        let mut rng = ChaCha8Rng::seed_from_u64(42);
-        let cells = reservoir_sample(&mut iterator, size, &mut rng);
+    // 순차 로드 (기존 방식)
+    let mut cells: Vec<CellIndex> = iterator.by_ref().take(size).collect();
 
+    if cells.len() < size {
         println!(
-            "Loaded {} random cells from dataset using reservoir sampling",
-            cells.len()
+            "Warning: Only {} cells available in dataset (requested {})",
+            cells.len(),
+            size
         );
-        Ok(cells)
     } else {
-        // 순차 로드 (기존 방식)
-        let cells: Vec<CellIndex> = iterator.by_ref().take(size).collect();
-
-        if cells.len() < size {
-            println!(
-                "Warning: Only {} cells available in dataset (requested {})",
-                cells.len(),
-                size
-            );
-        } else {
-            println!("Loaded {} cells from dataset", cells.len());
-        }
-
-        Ok(cells)
+        println!("Loaded {} cells from dataset", cells.len());
     }
+
+    if random {
+        let mut rng = StdRng::seed_from_u64(42);
+        cells.shuffle(&mut rng);
+    }
+
+    Ok(cells)
 }
 
 fn generate_test_dataset(size: usize) -> Vec<CellIndex> {
