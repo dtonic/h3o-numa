@@ -11,14 +11,14 @@ pub fn bench(c: &mut Criterion) {
     for (resolution, index) in HEXAGONS.iter().enumerate() {
         let index = CellIndex::try_from(*index).expect("hexagon index");
 
-        bench_h3o(&mut group, "h3on/Hexagon", index, resolution);
+        bench_h3on(&mut group, "h3on/Hexagon", index, resolution);
         bench_h3(&mut group, "h3/Hexagon", index, resolution);
     }
 
     for (resolution, index) in PENTAGONS.iter().enumerate() {
         let index = CellIndex::try_from(*index).expect("pentagon index");
 
-        bench_h3o(&mut group, "h3on/Pentagon", index, resolution);
+        bench_h3on(&mut group, "h3on/Pentagon", index, resolution);
         bench_h3(&mut group, "h3/Pentagon", index, resolution);
     }
 

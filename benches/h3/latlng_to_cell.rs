@@ -10,7 +10,7 @@ pub fn bench(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("h3on/Hexagon", resolution),
             &resolution,
-            |b, &resolution| bench_h3o(b, ll, resolution),
+            |b, &resolution| bench_h3on(b, ll, resolution),
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Hexagon", resolution),
@@ -24,7 +24,7 @@ pub fn bench(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("h3on/Pentagon", resolution),
             &resolution,
-            |b, &resolution| bench_h3o(b, ll, resolution),
+            |b, &resolution| bench_h3on(b, ll, resolution),
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Pentagon", resolution),

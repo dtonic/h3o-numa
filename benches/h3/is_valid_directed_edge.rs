@@ -47,7 +47,7 @@ pub fn bench(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("h3on/Hexagon", resolution),
             index,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Hexagon", resolution),
@@ -60,7 +60,7 @@ pub fn bench(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("h3on/Pentagon", resolution),
             index,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Pentagon", resolution),

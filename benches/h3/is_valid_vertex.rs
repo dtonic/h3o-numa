@@ -26,7 +26,7 @@ pub fn bench(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("h3on/Hexagon", vertex),
             index,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Hexagon", vertex),
@@ -39,7 +39,7 @@ pub fn bench(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("h3on/Pentagon", vertex),
             index,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Pentagon", vertex),

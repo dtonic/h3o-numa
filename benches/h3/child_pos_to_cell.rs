@@ -33,7 +33,7 @@ pub fn bench(c: &mut Criterion) {
     .enumerate()
     {
         let resolution = idx as u8;
-        bench_h3o(&mut group, "h3on/Hexagon", HEXAGON, position, resolution);
+        bench_h3on(&mut group, "h3on/Hexagon", HEXAGON, position, resolution);
         bench_h3(&mut group, "h3/Hexagon", HEXAGON, position, resolution);
     }
 
@@ -60,7 +60,7 @@ pub fn bench(c: &mut Criterion) {
     .enumerate()
     {
         let resolution = idx as u8;
-        bench_h3o(&mut group, "h3on/Pentagon", PENTAGON, position, resolution);
+        bench_h3on(&mut group, "h3on/Pentagon", PENTAGON, position, resolution);
         bench_h3(&mut group, "h3/Pentagon", PENTAGON, position, resolution);
     }
 

@@ -6,15 +6,15 @@ pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("cellToLocalIj");
 
     let (anchor, index) = (0x823147fffffffff, 0x8230e7fffffffff);
-    group.bench_function("h3on/Hexagon", |b| bench_h3o(b, anchor, index));
+    group.bench_function("h3on/Hexagon", |b| bench_h3on(b, anchor, index));
     group.bench_function("h3/Hexagon", |b| bench_h3(b, anchor, index));
 
     let (anchor, index) = (0x821f57fffffffff, 0x8208d7fffffffff);
-    group.bench_function("h3on/Pentagon", |b| bench_h3o(b, anchor, index));
+    group.bench_function("h3on/Pentagon", |b| bench_h3on(b, anchor, index));
     group.bench_function("h3/Pentagon", |b| bench_h3(b, anchor, index));
 
     let (anchor, index) = (0x823147fffffffff, 0x8230e7fffffffff);
-    group.bench_function("h3on/SameBase", |b| bench_h3o(b, anchor, index));
+    group.bench_function("h3on/SameBase", |b| bench_h3on(b, anchor, index));
     group.bench_function("h3/SameBase", |b| bench_h3(b, anchor, index));
 
     group.finish();

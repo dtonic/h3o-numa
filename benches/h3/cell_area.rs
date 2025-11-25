@@ -59,7 +59,7 @@ pub fn bench_m2(c: &mut Criterion) {
 fn bench_cell_area<F, G>(
     c: &mut Criterion,
     name: &'static str,
-    bench_h3o: F,
+    bench_h3on: F,
     bench_h3: G,
 ) where
     F: FnMut(&mut Bencher<'_>, &u64) + Copy,
@@ -71,7 +71,7 @@ fn bench_cell_area<F, G>(
         group.bench_with_input(
             BenchmarkId::new("h3on/Hexagon", resolution),
             index,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Hexagon", resolution),
@@ -84,7 +84,7 @@ fn bench_cell_area<F, G>(
         group.bench_with_input(
             BenchmarkId::new("h3on/Pentagon", resolution),
             index,
-            bench_h3o,
+            bench_h3on,
         );
         group.bench_with_input(
             BenchmarkId::new("h3/Pentagon", resolution),

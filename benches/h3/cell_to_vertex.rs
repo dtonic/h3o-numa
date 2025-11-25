@@ -11,11 +11,11 @@ pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("cellToVertex");
 
     for vertex_number in 0..6u8 {
-        bench_h3o(&mut group, "h3on/Hexagon", HEXAGON, vertex_number);
+        bench_h3on(&mut group, "h3on/Hexagon", HEXAGON, vertex_number);
         bench_h3(&mut group, "h3/Hexagon", HEXAGON, vertex_number);
 
         if vertex_number < 5 {
-            bench_h3o(&mut group, "h3on/Pentagon", PENTAGON, vertex_number);
+            bench_h3on(&mut group, "h3on/Pentagon", PENTAGON, vertex_number);
             bench_h3(&mut group, "h3/Pentagon", PENTAGON, vertex_number);
         }
     }

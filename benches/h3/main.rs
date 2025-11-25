@@ -61,6 +61,9 @@ mod uncompact_cells;
 mod uncompact_cells_size;
 mod vertex_to_latlng;
 
+#[cfg(feature = "numa")]
+mod numa_parallel_bench;
+
 #[cfg(feature = "geo")]
 mod h3_set_lo_linked_geo;
 #[cfg(feature = "geo")]
@@ -145,8 +148,15 @@ criterion_group!(
     vertex_to_latlng::bench,
 );
 
-#[cfg(not(feature = "geo"))]
+#[cfg(all(not(feature = "geo"), not(feature = "numa")))]
 criterion_main!(benches);
+
+#[cfg(feature = "numa")]
+criterion_group!(benches_numa, numa_parallel_bench::bench,);
+
+#[cfg(all(not(feature = "geo"), feature = "numa"))]
+criterion_main!(benches);
+// criterion_main!(benches, benches_numa);
 
 #[cfg(feature = "geo")]
 criterion_group!(
@@ -161,5 +171,8 @@ criterion_group!(
     polygon_to_cells::bench_polyfill_mode,
 );
 
-#[cfg(feature = "geo")]
+#[cfg(all(feature = "geo", not(feature = "numa")))]
 criterion_main!(benches, benches_geom);
+
+#[cfg(all(feature = "geo", feature = "numa"))]
+criterion_main!(benches, benches_geom, benches_numa);

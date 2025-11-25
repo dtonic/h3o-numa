@@ -11,10 +11,10 @@ pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("gridDisk");
 
     for k in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 100] {
-        bench_h3o(&mut group, "h3on/Hexagon", HEXAGON, k);
+        bench_h3on(&mut group, "h3on/Hexagon", HEXAGON, k);
         bench_h3(&mut group, "h3/Hexagon", HEXAGON, k);
 
-        bench_h3o(&mut group, "h3on/Pentagon", PENTAGON, k);
+        bench_h3on(&mut group, "h3on/Pentagon", PENTAGON, k);
         bench_h3(&mut group, "h3/Pentagon", PENTAGON, k);
     }
 

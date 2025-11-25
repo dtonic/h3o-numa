@@ -24,12 +24,14 @@ pre-release-replacements = [
 ]
 
 [features]
-default = ["std"]
+default = ["std", "numa"]
 std = ["dep:ahash"]
 geo = ["dep:geo"]
 serde = ["dep:serde", "dep:serde_repr"]
 tools = ["polyfit-rs"]
 typed_floats = ["dep:typed_floats"]
+rayon = ["dep:rayon"]
+numa = ["dep:num_cpus", "dep:once_cell", "dep:hwlocality", "dep:core_affinity", "rayon"]
 
 [dependencies]
 ahash = { version = "0.8", optional = true, default-features = false, features = ["std", "compile-time-rng"] }
@@ -43,6 +45,12 @@ polyfit-rs = { version = "0.2", optional = true, default-features = false }
 serde = { version = "1.0", optional = true, default-features = false, features = ["derive"] }
 serde_repr = { version = "0.1", optional = true, default-features = false }
 typed_floats = { version = "1.0", optional = true, default-features = false }
+h3ron-h3-sys = "0.17"
+rayon = { version = "1.8", optional = true }
+hwlocality = { version = "1.0.0-alpha.11", optional = true }
+core_affinity = { version = "0.8", optional = true }
+once_cell = { version = "1.21", optional = true }
+num_cpus = { version = "1.17", optional = true }
 
 [dev-dependencies]
 approx = { version = "0.5", default-features = false }

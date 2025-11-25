@@ -11,10 +11,10 @@ pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("cellToChildrenSize");
 
     for resolution in 0..=15 {
-        bench_h3o(&mut group, "h3on/Hexagon", HEXAGON, resolution);
+        bench_h3on(&mut group, "h3on/Hexagon", HEXAGON, resolution);
         bench_h3(&mut group, "h3/Hexagon", HEXAGON, resolution);
 
-        bench_h3o(&mut group, "h3on/Pentagon", PENTAGON, resolution);
+        bench_h3on(&mut group, "h3on/Pentagon", PENTAGON, resolution);
         bench_h3(&mut group, "h3/Pentagon", PENTAGON, resolution);
     }
 

@@ -8,10 +8,10 @@ const HEXAGON: u64 = 0x8f734e64992d6d8;
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("maxFaceCount");
 
-    group.bench_function("h3on/Hexagon", |b| bench_h3o(b, HEXAGON));
+    group.bench_function("h3on/Hexagon", |b| bench_h3on(b, HEXAGON));
     group.bench_function("h3/Hexagon", |b| bench_h3(b, HEXAGON));
 
-    group.bench_function("h3on/Pentagon", |b| bench_h3o(b, PENTAGON));
+    group.bench_function("h3on/Pentagon", |b| bench_h3on(b, PENTAGON));
     group.bench_function("h3/Pentagon", |b| bench_h3(b, PENTAGON));
 
     group.finish();

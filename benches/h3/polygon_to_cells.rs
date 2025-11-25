@@ -15,7 +15,7 @@ pub fn bench_full(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("h3on/Full", res),
             &res,
-            |b, &res| bench_h3o(b, &polygon, res),
+            |b, &res| bench_h3on(b, &polygon, res),
         );
 
         group.bench_with_input(
@@ -36,7 +36,7 @@ pub fn bench_transmeridian(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("h3on/Transmeridian", res),
             &res,
-            |b, &res| bench_h3o(b, &polygon, res),
+            |b, &res| bench_h3on(b, &polygon, res),
         );
 
         group.bench_with_input(

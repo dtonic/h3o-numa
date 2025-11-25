@@ -10,7 +10,7 @@ pub fn bench(c: &mut Criterion) {
     let cells = CellIndex::base_cells()
         .flat_map(|index| index.children(RESOLUTION))
         .collect::<Vec<_>>();
-    group.bench_function("h3on/FullCompaction", |b| bench_h3o(b, &cells));
+    group.bench_function("h3on/FullCompaction", |b| bench_h3on(b, &cells));
     group.bench_function("h3/FullCompaction", |b| bench_h3(b, &cells));
 
     let sparse = cells
@@ -19,7 +19,7 @@ pub fn bench(c: &mut Criterion) {
         .enumerate()
         .filter_map(|(idx, cell)| (idx % 33 != 0).then_some(cell))
         .collect::<Vec<_>>();
-    group.bench_function("h3on/PartialCompaction", |b| bench_h3o(b, &sparse));
+    group.bench_function("h3on/PartialCompaction", |b| bench_h3on(b, &sparse));
     group.bench_function("h3/PartialCompaction", |b| bench_h3(b, &sparse));
 
     let uncompactable = cells
@@ -27,7 +27,7 @@ pub fn bench(c: &mut Criterion) {
         .copied()
         .filter(|cell| cell.direction_at(RESOLUTION) != Some(Direction::IK))
         .collect::<Vec<_>>();
-    group.bench_function("h3on/NoCompaction", |b| bench_h3o(b, &uncompactable));
+    group.bench_function("h3on/NoCompaction", |b| bench_h3on(b, &uncompactable));
     group.bench_function("h3/NoCompaction", |b| bench_h3(b, &uncompactable));
 
     group.finish();

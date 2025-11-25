@@ -58,7 +58,7 @@ pub fn bench_m(c: &mut Criterion) {
 fn bench_distance<F, G>(
     c: &mut Criterion,
     name: &'static str,
-    mut bench_h3o: F,
+    mut bench_h3on: F,
     mut bench_h3: G,
 ) where
     F: FnMut(&mut Bencher<'_>, LatLng, LatLng),
@@ -69,7 +69,7 @@ fn bench_distance<F, G>(
     group.bench_function("h3o", |b| {
         let src = LatLng::new(SRC.0, SRC.1).expect("src");
         let dst = LatLng::new(DST.0, DST.1).expect("dst");
-        bench_h3o(b, src, dst)
+        bench_h3on(b, src, dst)
     });
     group.bench_function("h3", |b| {
         let src = h3ron_h3_sys::LatLng {
