@@ -1,4 +1,4 @@
-use criterion::{BatchSize, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion};
 use h3on::CellIndex;
 use rand::{SeedableRng, seq::SliceRandom};
 use rand_chacha::ChaCha8Rng;
@@ -8,7 +8,6 @@ use std::{
     hint::black_box,
     io::{BufReader, Error, ErrorKind, Read, Result},
     path::Path,
-    sync::Arc,
 };
 use zstd::stream::read::Decoder;
 

@@ -32,7 +32,7 @@ tools = ["polyfit-rs"]
 typed_floats = ["dep:typed_floats"]
 zstd = ["dep:zstd"]
 rayon = ["dep:rayon"]
-numa = ["dep:num_cpus", "dep:once_cell", "dep:hwlocality", "dep:core_affinity", "rayon", "zstd"]
+numa = ["dep:rand", "dep:rand_chacha", "dep:num_cpus", "dep:once_cell", "dep:hwlocality", "dep:core_affinity", "rayon", "zstd"]
 
 [dependencies]
 ahash = { version = "0.8", optional = true, default-features = false, features = ["std", "compile-time-rng"] }
@@ -59,6 +59,8 @@ approx = { version = "0.5", default-features = false }
 criterion = { version = "0.7", default-features = false, features = ["plotters", "cargo_bench_support", "html_reports"] }
 geojson = { version = "0.24", default-features = false, features = ["geo-types"] }
 h3ron-h3-sys = { version = "0.17", default-features = false }
+rand = { version = "0.9", default-features = false, features = ["std", "std_rng"] }
+rand_chacha = { version = "0.9", default-features = false }
 
 [[bin]]
 name = "average_edge_length"
