@@ -226,11 +226,6 @@ fn bench_h3on_parallel(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
 fn bench_h3on_numa(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
     // NUMA 컨텍스트를 벤치마크 밖에서 한 번만 생성
     let numa_ctx = init_numa_once(data.len());
-    println!(
-        "NUMA Setup for {} cells: buffer sizes: {:?}",
-        data.len(),
-        numa_ctx.buffer_sizes
-    );
 
     b.iter(|| {
         let result = h3on::numa::build_numa_pool(
