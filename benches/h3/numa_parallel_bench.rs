@@ -22,8 +22,8 @@ pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("NUMA_Parallel_Performance");
 
     // 다양한 크기의 데이터셋으로 테스트 (linear 증가), 800000개 이상은 데이터 생성이 충분하지 않음
-    let dataset_sizes = [100];
-    // let dataset_sizes = [100, 1000, 10000, 100000, 200000, 400000, 600000];
+    // let dataset_sizes = [100];
+    let dataset_sizes = [100, 1000, 10000, 100000, 200000, 400000, 600000];
 
     for &size in &dataset_sizes {
         let test_data = generate_test_dataset(size);
@@ -73,38 +73,38 @@ pub fn bench(c: &mut Criterion) {
         // );
     }
 
-    // // 3. 대용량 데이터 처리: 500,000 cells (기존 호환성 유지)
-    // let large_dataset = generate_test_dataset(500000); // generate_large_dataset 대신 generate_test_dataset 사용
-    // println!("Large dataset: generated {} cells", large_dataset.len());
+    // 3. 대용량 데이터 처리: 500,000 cells (기존 호환성 유지)
+    let large_dataset = generate_test_dataset(500000); // generate_large_dataset 대신 generate_test_dataset 사용
+    println!("Large dataset: generated {} cells", large_dataset.len());
 
-    // // 대용량 데이터에서도 Sequential, Parallel, NUMA 모두 실행
-    // group.bench_function("h3on/Large_Dataset_Sequential", |b| {
-    //     bench_h3on_sequential(b, &large_dataset)
+    // 대용량 데이터에서도 Sequential, Parallel, NUMA 모두 실행
+    group.bench_function("h3on/Large_Dataset_Sequential", |b| {
+        bench_h3on_sequential(b, &large_dataset)
+    });
+
+    group.bench_function("h3on/Large_Dataset_Parallel", |b| {
+        bench_h3on_parallel(b, &large_dataset)
+    });
+
+    group.bench_function("h3on/Large_Dataset_NUMA", |b| {
+        bench_h3on_numa(b, &large_dataset) // bench_h3on_numa_large 대신 bench_h3on_numa 사용
+    });
+
+    // 4. Locality 테스트: 지역적으로 가까운 셀들
+    let locality_dataset = generate_locality_dataset(10000);
+    println!(
+        "Locality dataset: generated {} cells",
+        locality_dataset.len()
+    );
+
+    group.bench_function("h3on/Locality_Optimized", |b| {
+        bench_h3on_locality(b, &locality_dataset)
+    });
+
+    // h3o는 단일 스레드 기반이므로 병렬화 벤치마크 제거
+    // group.bench_function("h3o/Locality_Optimized", |b| {
+    //     bench_h3o_locality(b, &locality_dataset)
     // });
-
-    // group.bench_function("h3on/Large_Dataset_Parallel", |b| {
-    //     bench_h3on_parallel(b, &large_dataset)
-    // });
-
-    // group.bench_function("h3on/Large_Dataset_NUMA", |b| {
-    //     bench_h3on_numa(b, &large_dataset) // bench_h3on_numa_large 대신 bench_h3on_numa 사용
-    // });
-
-    // // 4. Locality 테스트: 지역적으로 가까운 셀들
-    // let locality_dataset = generate_locality_dataset(10000);
-    // println!(
-    //     "Locality dataset: generated {} cells",
-    //     locality_dataset.len()
-    // );
-
-    // group.bench_function("h3on/Locality_Optimized", |b| {
-    //     bench_h3on_locality(b, &locality_dataset)
-    // });
-
-    // // h3o는 단일 스레드 기반이므로 병렬화 벤치마크 제거
-    // // group.bench_function("h3o/Locality_Optimized", |b| {
-    // //     bench_h3o_locality(b, &locality_dataset)
-    // // });
 
     group.finish();
 }
