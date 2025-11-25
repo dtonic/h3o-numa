@@ -226,28 +226,25 @@ fn bench_h3on_parallel(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
 fn bench_h3on_numa(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
     // NUMA 컨텍스트를 벤치마크 밖에서 한 번만 생성
     let numa_ctx = init_numa_once(data.len());
-    println!(
-        "NUMA Setup for {} cells: buffer sizes: {:?}",
-        data.len(),
-        numa_ctx.buffer_sizes
+
+    // Global pool을 사용하여 순수 작업 성능만 측정 (pool 생성 오버헤드 제외)
+    let pool = h3on::numa::get_or_init_global_pool(
+        &numa_ctx.topo,
+        numa_ctx.buffer_sizes,
     );
 
     b.iter(|| {
-        let result = h3on::numa::build_numa_pool(
-            &numa_ctx.topo,
-            numa_ctx.buffer_sizes,
-            || {
-                data.par_iter()
-                    .with_min_len(100)
-                    .map(|&cell| {
-                        let neighbors = cell.grid_disk::<Vec<_>>(2);
-                        let area = cell.area_km2();
-                        let boundary = cell.boundary();
-                        (neighbors.len(), area, boundary.len())
-                    })
-                    .collect::<Vec<_>>()
-            },
-        );
+        let result = pool.install(|| {
+            data.par_iter()
+                .with_min_len(100)
+                .map(|&cell| {
+                    let neighbors = cell.grid_disk::<Vec<_>>(2);
+                    let area = cell.area_km2();
+                    let boundary = cell.boundary();
+                    (neighbors.len(), area, boundary.len())
+                })
+                .collect::<Vec<_>>()
+        });
         black_box(result)
     });
 }

@@ -90,6 +90,79 @@ thread_local! {
     static NODE_LOCAL: OnceCell<NodeLocal> = const { OnceCell::new() };
 }
 
+/// Global NUMA-aware thread pool for benchmarking purposes
+///
+/// This static pool is initialized once and reused across benchmark iterations
+/// to measure pure workload performance without pool creation overhead.
+static GLOBAL_NUMA_POOL: once_cell::sync::OnceCell<rayon::ThreadPool> =
+    once_cell::sync::OnceCell::new();
+
+/// Get or initialize the global NUMA-aware thread pool
+///
+/// This function is primarily intended for benchmarking scenarios where
+/// measuring pure workload performance (without pool creation overhead) is desired.
+/// The pool is created once on first call and reused for subsequent calls.
+///
+/// # Arguments
+///
+/// * `topo` - NUMA topology information
+/// * `buffer_sizes` - Buffer sizes for scratch, LUT, and intermediate buffers
+///
+/// # Returns
+///
+/// Reference to the global thread pool
+///
+/// # Note
+///
+/// The `buffer_sizes` parameter is only used on the first call. Subsequent calls
+/// ignore this parameter and return the already-initialized pool.
+pub fn get_or_init_global_pool(
+    topo: &NumaTopology,
+    buffer_sizes: (usize, usize, usize),
+) -> &'static rayon::ThreadPool {
+    GLOBAL_NUMA_POOL.get_or_init(|| {
+        use rayon::ThreadPoolBuilder;
+
+        // Collect all available cores from all NUMA nodes
+        let worker_cores: Vec<usize> =
+            topo.cores_per_node.iter().flatten().copied().collect();
+
+        let workers = worker_cores.len();
+
+        // Create thread pool with custom spawn handler
+        ThreadPoolBuilder::new()
+            .num_threads(workers)
+            .spawn_handler(move |thread| {
+                let thread_index = thread.index();
+                let core_id = worker_cores[thread_index % workers];
+
+                // Pin the thread to a specific core
+                let _ = core_affinity::set_for_current(core_affinity::CoreId {
+                    id: core_id,
+                });
+
+                // Initialize node-local buffers with first-touch allocation
+                NODE_LOCAL.with(|cell| {
+                    let (scratch_size, lut_size, intermediate_size) = buffer_sizes;
+                    #[expect(clippy::let_underscore_must_use, reason = "OnceCell initialization is infallible for NodeLocal")]
+                    let _ = cell.set(NodeLocal::new(
+                        scratch_size,
+                        lut_size,
+                        intermediate_size,
+                    ));
+                });
+
+                // Create and spawn the worker thread
+                std::thread::Builder::new()
+                    .name(format!("h3on-numa-{thread_index}"))
+                    .spawn(move || thread.run())
+                    .map(|_| ())
+            })
+            .build()
+            .expect("Failed to build NUMA-aware thread pool")
+    })
+}
+
 /// Build and configure a NUMA-aware thread pool
 ///
 /// This function creates a thread pool where each worker thread is:
