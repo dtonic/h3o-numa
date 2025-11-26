@@ -672,7 +672,7 @@ impl CellIndex {
             // Use NUMA optimization when available
             Self::compact_numa(cells)
         }
-        
+
         #[cfg(not(feature = "numa"))]
         {
             // Fall back to standard implementation
@@ -768,39 +768,41 @@ impl CellIndex {
         if cells.iter().any(|cell| cell.resolution() != resolution) {
             return Err(CompactionError::HeterogeneousResolution);
         }
-        
+
         let old_len = cells.len();
         let len = cells.len();
-        
+
         // Use NUMA-aware thread pool for sorting
         if len > 1000 {
-            use crate::numa::{init_numa, build_numa_pool, estimate_buffer_sizes};
-            
+            use crate::numa::{
+                build_numa_pool, estimate_buffer_sizes, init_numa,
+            };
+
             // Estimate buffer sizes for NUMA optimization
             let buffer_sizes = estimate_buffer_sizes(resolution.into(), len);
-                
+
             // Initialize NUMA topology
             let topo = init_numa();
-            
-                            // Use NUMA-aware thread pool for sorting with chunk bounds
-                build_numa_pool(&topo, buffer_sizes, || {
-                    use rayon::prelude::*;
-                    let (job_min, _) = crate::parallel::chunk_bounds(len);
-                    if len >= job_min {
-                        cells.par_sort_unstable();
-                    } else {
-                        cells.sort_unstable();
-                    }
-                });
+
+            // Use NUMA-aware thread pool for sorting with chunk bounds
+            build_numa_pool(&topo, buffer_sizes, || {
+                use rayon::prelude::*;
+                let (job_min, _) = crate::parallel::chunk_bounds(len);
+                if len >= job_min {
+                    cells.par_sort_unstable();
+                } else {
+                    cells.sort_unstable();
+                }
+            });
         } else {
             cells.sort_unstable();
         }
-        
+
         cells.dedup();
         if cells.len() < old_len {
             return Err(CompactionError::DuplicateInput);
         }
-        
+
         // Rest of the compaction logic remains the same
         let mut cursor = Cursor::new(cells);
         'next_cell: while let Some(&cell) = cursor.peek() {
@@ -849,7 +851,7 @@ impl CellIndex {
             // Use NUMA optimization when available
             Self::uncompact_size_numa(compacted, resolution)
         }
-        
+
         #[cfg(not(feature = "numa"))]
         {
             // Fall back to standard implementation
@@ -909,28 +911,29 @@ impl CellIndex {
         compacted: impl IntoIterator<Item = Self>,
         resolution: Resolution,
     ) -> u64 {
-        use crate::numa::{init_numa, build_numa_pool, estimate_buffer_sizes};
-        
+        use crate::numa::{build_numa_pool, estimate_buffer_sizes, init_numa};
+
         let compacted: Vec<_> = compacted.into_iter().collect();
         let len = compacted.len();
-        
+
         // Use NUMA optimization only for large datasets
         if len > 100 {
             // Estimate buffer sizes for NUMA optimization
             let expected_cells = len * (1 << (resolution as u8 * 2));
-            let buffer_sizes = estimate_buffer_sizes(resolution as u8, expected_cells);
-            
+            let buffer_sizes =
+                estimate_buffer_sizes(resolution as u8, expected_cells);
+
             // Initialize NUMA topology
             let topo = init_numa();
-            
+
             // Use NUMA-aware thread pool with chunk bounds
             build_numa_pool(&topo, buffer_sizes, || {
                 use rayon::prelude::*;
-                
+
                 // Pre-partition for better locality
                 let mut sorted_compacted = compacted.clone();
                 sorted_compacted.sort_unstable();
-                
+
                 let (job_min, job_max) = crate::parallel::chunk_bounds(len);
                 if len >= job_min {
                     sorted_compacted
@@ -978,7 +981,7 @@ impl CellIndex {
             // Use NUMA optimization when available
             Self::uncompact_numa(compacted, resolution)
         }
-        
+
         #[cfg(not(feature = "numa"))]
         {
             // Fall back to standard implementation
@@ -1044,28 +1047,29 @@ impl CellIndex {
         compacted: impl IntoIterator<Item = Self>,
         resolution: Resolution,
     ) -> Box<dyn Iterator<Item = Self>> {
-        use crate::numa::{init_numa, build_numa_pool, estimate_buffer_sizes};
-        
+        use crate::numa::{build_numa_pool, estimate_buffer_sizes, init_numa};
+
         let compacted: Vec<_> = compacted.into_iter().collect();
         let len = compacted.len();
-        
+
         // Use NUMA optimization only for large datasets
         if len > 100 {
             // Estimate buffer sizes for NUMA optimization
             let expected_cells = len * (1 << (resolution as u8 * 2));
-            let buffer_sizes = estimate_buffer_sizes(resolution as u8, expected_cells);
-            
+            let buffer_sizes =
+                estimate_buffer_sizes(resolution as u8, expected_cells);
+
             // Initialize NUMA topology
             let topo = init_numa();
-            
+
             // Use NUMA-aware thread pool with chunk bounds
             let results = build_numa_pool(&topo, buffer_sizes, || {
                 use rayon::prelude::*;
-                
+
                 // Pre-partition for better locality
                 let mut sorted_compacted = compacted.clone();
                 sorted_compacted.sort_unstable();
-                
+
                 let (job_min, job_max) = crate::parallel::chunk_bounds(len);
                 if len >= job_min {
                     sorted_compacted
@@ -1081,7 +1085,7 @@ impl CellIndex {
                         .collect::<Vec<_>>()
                 }
             });
-            
+
             Box::new(results.into_iter())
         } else {
             // Fallback to sequential processing for small datasets
@@ -1173,7 +1177,7 @@ impl CellIndex {
         let deleted_edge = self.is_pentagon().then_some(1);
 
         Edge::iter()
-            .filter(move |&edge| (Some(u8::from(edge)) != deleted_edge))
+            .filter(move |&edge| Some(u8::from(edge)) != deleted_edge)
             .map(move |edge| {
                 DirectedEdgeIndex::new_unchecked(bits::set_edge(template, edge))
             })
@@ -1495,7 +1499,7 @@ impl CellIndex {
             // Use NUMA optimization when available
             Self::grid_disks_fast_numa(indexes, k)
         }
-        
+
         #[cfg(not(feature = "numa"))]
         {
             // Fall back to rayon parallel processing or sequential processing
@@ -1534,8 +1538,6 @@ impl CellIndex {
         }
     }
 
-
-
     /// Returns the grid disk of hexagons at grid distance `k` from the given indexes,
     /// with NUMA-aware optimizations.
     ///
@@ -1565,26 +1567,26 @@ impl CellIndex {
         indexes: impl IntoIterator<Item = Self>,
         k: u32,
     ) -> Box<dyn Iterator<Item = Option<Self>>> {
-        use crate::numa::{init_numa, build_numa_pool, estimate_buffer_sizes};
-        
+        use crate::numa::{build_numa_pool, estimate_buffer_sizes, init_numa};
+
         let indexes: Vec<_> = indexes.into_iter().collect();
         let len = indexes.len();
-        
+
         // Estimate buffer sizes for NUMA optimization
         let expected_cells = len * (k as usize * 3 + 1);
         let buffer_sizes = estimate_buffer_sizes(15, expected_cells); // Use max resolution for estimation
-        
+
         // Initialize NUMA topology
         let topo = init_numa();
-        
+
         // Use NUMA-aware thread pool with chunk bounds
         let results = build_numa_pool(&topo, buffer_sizes, || {
             use rayon::prelude::*;
-            
+
             // Pre-partition for better locality
             let mut sorted_indexes = indexes.clone();
             sorted_indexes.sort_unstable();
-            
+
             let (job_min, job_max) = crate::parallel::chunk_bounds(len);
             if len >= job_min {
                 sorted_indexes
@@ -1600,7 +1602,7 @@ impl CellIndex {
                     .collect::<Vec<_>>()
             }
         });
-        
+
         Box::new(results.into_iter())
     }
 
