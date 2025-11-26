@@ -43,72 +43,19 @@ pub fn bench(c: &mut Criterion) {
             |b, data| bench_h3on_sequential(b, data),
         );
 
-        // group.bench_with_input(
-        //     BenchmarkId::new("h3on/Parallel", size),
-        //     &test_data,
-        //     |b, data| bench_h3on_parallel(b, data),
-        // );
-
         group.bench_with_input(
             BenchmarkId::new("h3on/NUMA_Optimized", size),
             &test_data,
             |b, data| bench_h3on_numa(b, data),
         );
 
-        // // 2. h3o와의 비교
-        // group.bench_with_input(
-        //     BenchmarkId::new("h3o/Sequential", size),
-        //     &test_data,
-        //     |b, data| bench_h3o_sequential(b, data),
-        // );
-
-        // 3. 단순 복잡도 검증
+        // 2. 단순 복잡도 검증
         group.bench_with_input(
             BenchmarkId::new("Complexity_Check", size),
             &test_data,
             |b, data| bench_complexity_check(b, data),
         );
-
-        // h3o는 단일 스레드 기반이므로 병렬화 벤치마크 제거
-        // group.bench_with_input(
-        //     BenchmarkId::new("h3o/Parallel", size),
-        //     &test_data,
-        //     |b, data| bench_h3o_parallel(b, data),
-        // );
     }
-
-    // // 3. 대용량 데이터 처리: 500,000 cells (기존 호환성 유지)
-    // let large_dataset = generate_test_dataset(500000); // generate_large_dataset 대신 generate_test_dataset 사용
-    // println!("Large dataset: generated {} cells", large_dataset.len());
-
-    // // 대용량 데이터에서도 Sequential, Parallel, NUMA 모두 실행
-    // group.bench_function("h3on/Large_Dataset_Sequential", |b| {
-    //     bench_h3on_sequential(b, &large_dataset)
-    // });
-
-    // group.bench_function("h3on/Large_Dataset_Parallel", |b| {
-    //     bench_h3on_parallel(b, &large_dataset)
-    // });
-
-    // group.bench_function("h3on/Large_Dataset_NUMA", |b| {
-    //     bench_h3on_numa(b, &large_dataset) // bench_h3on_numa_large 대신 bench_h3on_numa 사용
-    // });
-
-    // // 4. Locality 테스트: 지역적으로 가까운 셀들
-    // let locality_dataset = generate_locality_dataset(10000);
-    // println!(
-    //     "Locality dataset: generated {} cells",
-    //     locality_dataset.len()
-    // );
-
-    // group.bench_function("h3on/Locality_Optimized", |b| {
-    //     bench_h3on_locality(b, &locality_dataset)
-    // });
-
-    // // h3o는 단일 스레드 기반이므로 병렬화 벤치마크 제거
-    // group.bench_function("h3o/Locality_Optimized", |b| {
-    //     bench_h3o_locality(b, &locality_dataset)
-    // });
 
     group.finish();
 }
@@ -196,77 +143,6 @@ fn generate_test_dataset(size: usize) -> Vec<CellIndex> {
     cells
 }
 
-fn generate_locality_dataset(size: usize) -> Vec<CellIndex> {
-    let mut cells = Vec::with_capacity(size);
-    let center = CellIndex::try_from(0x89283080ddbffff).expect("center cell");
-
-    // 중심 셀 주변의 지역적으로 가까운 셀들 생성
-    let disk_cells: Vec<_> =
-        center.grid_disk::<Vec<_>>(5).into_iter().collect();
-
-    for i in 0..size {
-        let cell_idx = i % disk_cells.len();
-        if let Some(cell) = disk_cells.get(cell_idx) {
-            cells.push(*cell);
-        }
-    }
-
-    // 충분한 셀이 생성되지 않으면 다른 방법으로 추가
-    while cells.len() < size {
-        let extra_center =
-            CellIndex::try_from(0x89283080c37ffff).expect("extra center cell");
-        let extra_disk_cells: Vec<_> =
-            extra_center.grid_disk::<Vec<_>>(3).into_iter().collect();
-
-        for (_i, cell) in extra_disk_cells.iter().enumerate() {
-            if cells.len() >= size {
-                break;
-            }
-            cells.push(*cell);
-        }
-
-        if cells.len() < size {
-            // 더 많은 base cell에서 생성
-            let more_centers = [
-                0x89283080c27ffff,
-                0x89283080d53ffff,
-                0x89283080dcfffff,
-                0x89283080dc3ffff,
-            ];
-
-            for center_val in &more_centers {
-                if cells.len() >= size {
-                    break;
-                }
-                if let Ok(center_cell) = CellIndex::try_from(*center_val) {
-                    let more_cells: Vec<_> = center_cell
-                        .grid_disk::<Vec<_>>(2)
-                        .into_iter()
-                        .collect();
-                    for cell in more_cells {
-                        if cells.len() >= size {
-                            break;
-                        }
-                        cells.push(cell);
-                    }
-                }
-            }
-        }
-
-        // 무한 루프 방지
-        if cells.len() == 0 {
-            break;
-        }
-    }
-
-    println!(
-        "Generated {} cells for locality dataset size {}",
-        cells.len(),
-        size
-    );
-    cells
-}
-
 // -----------------------------------------------------------------------------
 
 fn bench_h3on_sequential(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
@@ -290,30 +166,6 @@ fn bench_h3on_sequential(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
             black_box(result)
         },
         BatchSize::LargeInput, // 큰 입력에 최적화된 배치 크기
-    );
-}
-
-fn bench_h3on_parallel(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
-    use criterion::BatchSize;
-
-    b.iter_batched(
-        || Arc::new(data.to_vec()), // setup: Arc로 감싼 데이터 준비
-        |data_arc| {
-            let result: Vec<_> = data_arc
-                .par_iter()
-                .map(|&cell| {
-                    // 병렬로 복잡한 연산 수행
-                    let neighbors = cell.grid_disk::<Vec<_>>(2);
-                    let area = cell.area_km2();
-                    let boundary = cell.boundary();
-                    (neighbors.len(), area, boundary.len())
-                })
-                .collect();
-
-            // black_box로 결과를 실제로 사용
-            black_box(result)
-        },
-        BatchSize::LargeInput,
     );
 }
 
@@ -380,62 +232,6 @@ fn bench_h3on_numa(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
         BatchSize::LargeInput,
     );
 }
-
-fn bench_h3on_locality(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
-    let data = Arc::new(data.to_vec());
-
-    b.iter(|| {
-        // 지역성 최적화: 가까운 셀들을 그룹화하여 처리
-        let mut results = Vec::new();
-
-        for chunk in data.chunks(100) {
-            let chunk_results: Vec<_> = chunk
-                .par_iter()
-                .map(|&cell| {
-                    // 지역적으로 가까운 셀들에 대한 연산
-                    let neighbors = cell.grid_disk::<Vec<_>>(1);
-                    let local_area =
-                        neighbors.iter().map(|n| n.area_km2()).sum::<f64>();
-                    (neighbors.len(), local_area)
-                })
-                .collect();
-            results.extend(chunk_results);
-        }
-
-        results
-    });
-}
-
-// -----------------------------------------------------------------------------
-
-fn bench_h3o_sequential(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) {
-    let h3o_data: Vec<h3o::CellIndex> = data
-        .iter()
-        .map(|&cell| {
-            h3o::CellIndex::try_from(u64::from(cell)).expect("h3o cell")
-        })
-        .collect();
-
-    b.iter(|| {
-        let result: Vec<_> = h3o_data
-            .iter()
-            .map(|&cell| {
-                let neighbors = cell.grid_disk::<Vec<_>>(2);
-                let area = cell.area_km2();
-                let boundary = cell.boundary();
-                (neighbors.len(), area, boundary.len())
-            })
-            .collect();
-
-        // black_box로 결과를 실제로 사용
-        black_box(result)
-    });
-}
-
-// h3o는 단일 스레드 기반이므로 병렬화 함수들 제거
-// fn bench_h3o_parallel(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) { ... }
-// fn bench_h3o_parallel_large(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) { ... }
-// fn bench_h3o_locality(b: &mut criterion::Bencher<'_>, data: &[CellIndex]) { ... }
 
 // -----------------------------------------------------------------------------
 
