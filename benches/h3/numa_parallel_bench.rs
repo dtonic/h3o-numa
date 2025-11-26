@@ -38,7 +38,7 @@ pub fn bench(c: &mut Criterion) {
 
         // 1. 단일 스레드 vs 병렬 처리 비교
         group.bench_with_input(
-            BenchmarkId::new("h3on/Previous", size),
+            BenchmarkId::new("h3on/Original", size),
             &test_data,
             |b, data| bench_h3on_sequential(b, data),
         );
